@@ -3,7 +3,7 @@ use crate::audio;
 use serde::Serialize;
 use std::process::Command;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeHealth {
     pub ffmpeg_available: bool,
@@ -21,12 +21,11 @@ fn command_available(binary: &str) -> bool {
         .unwrap_or(false)
 }
 
-#[tauri::command]
-pub fn get_runtime_health() -> RuntimeHealth {
-    let ffmpeg_available = audio::check_ffmpeg_available();
-    let coli_available = AsrClient::check_availability();
-    let osascript_available = command_available("osascript");
-
+fn build_runtime_health(
+    ffmpeg_available: bool,
+    coli_available: bool,
+    osascript_available: bool,
+) -> RuntimeHealth {
     let mut issues = Vec::new();
     if !ffmpeg_available {
         issues.push("ffmpeg is missing. Install it with: brew install ffmpeg".to_string());
@@ -44,5 +43,41 @@ pub fn get_runtime_health() -> RuntimeHealth {
         osascript_available,
         ready: ffmpeg_available && coli_available,
         issues,
+    }
+}
+
+#[tauri::command]
+pub fn get_runtime_health() -> RuntimeHealth {
+    let ffmpeg_available = audio::check_ffmpeg_available();
+    let coli_available = AsrClient::check_availability();
+    let osascript_available = command_available("osascript");
+
+    build_runtime_health(ffmpeg_available, coli_available, osascript_available)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_runtime_health;
+
+    #[test]
+    fn ready_depends_on_ffmpeg_and_coli() {
+        let health = build_runtime_health(true, true, false);
+
+        assert!(health.ready);
+        assert_eq!(health.issues.len(), 1);
+        assert_eq!(
+            health.issues[0],
+            "osascript is unavailable, so simulated paste may not work."
+        );
+    }
+
+    #[test]
+    fn missing_dependencies_are_reported() {
+        let health = build_runtime_health(false, false, true);
+
+        assert!(!health.ready);
+        assert_eq!(health.issues.len(), 2);
+        assert!(health.issues.iter().any(|issue| issue.contains("ffmpeg is missing")));
+        assert!(health.issues.iter().any(|issue| issue.contains("coli is missing")));
     }
 }

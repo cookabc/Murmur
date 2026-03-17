@@ -1,21 +1,5 @@
-use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HotkeyConfig {
-    pub accelerator: String,
-    pub enabled: bool,
-}
-
-impl Default for HotkeyConfig {
-    fn default() -> Self {
-        Self {
-            accelerator: "Cmd+Shift+V".to_string(),
-            enabled: true,
-        }
-    }
-}
 
 pub struct HotkeyManager {
     current_hotkey: Option<String>,
@@ -94,10 +78,6 @@ impl HotkeyManager {
         }
     }
 
-    pub fn set_current_hotkey(&mut self, accelerator: String) {
-        self.current_hotkey = Some(Self::normalize_accelerator(&accelerator));
-    }
-
     pub fn unregister_hotkey(&mut self, app_handle: &AppHandle) -> Result<(), String> {
         if let Some(accelerator) = self.current_hotkey.as_deref() {
             if app_handle.global_shortcut().is_registered(accelerator) {
@@ -148,4 +128,34 @@ pub fn get_current_hotkey(
 ) -> Option<String> {
     let manager = state.lock().ok()?;
     manager.get_current_hotkey().map(|s| s.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::HotkeyManager;
+
+    #[test]
+    fn normalizes_common_modifier_aliases() {
+        assert_eq!(
+            HotkeyManager::normalize_accelerator("cmd+shift+v"),
+            "Command+Shift+V"
+        );
+        assert_eq!(
+            HotkeyManager::normalize_accelerator("command + option + space"),
+            "Command+Alt+Space"
+        );
+        assert_eq!(
+            HotkeyManager::normalize_accelerator("cmdorctrl+k"),
+            "CommandOrControl+K"
+        );
+    }
+
+    #[test]
+    fn drops_empty_segments_and_uppercases_single_keys() {
+        assert_eq!(
+            HotkeyManager::normalize_accelerator(" ctrl + + escape "),
+            "Control+Escape"
+        );
+        assert_eq!(HotkeyManager::normalize_accelerator("alt+m"), "Alt+M");
+    }
 }

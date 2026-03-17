@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command as StdCommand;
-use std::sync::Mutex;
 use std::time::Duration;
 use tokio::process::Command;
 use tokio::time::timeout;
@@ -116,34 +115,6 @@ impl AsrClient {
 impl Default for AsrClient {
     fn default() -> Self {
         Self::new("sensevoice".to_string(), true)
-    }
-}
-
-// Thread-safe wrapper for AsrClient
-pub struct AsrClientWrapper(Mutex<AsrClient>);
-
-impl AsrClientWrapper {
-    pub fn new() -> Self {
-        Self(Mutex::new(AsrClient::default()))
-    }
-
-    pub async fn transcribe(&self, audio_path: &Path, model: Option<String>, polish: Option<bool>) -> Result<TranscriptionResult, String> {
-        let mut client = self.0.lock().map_err(|e| e.to_string())?;
-
-        if let Some(m) = model {
-            client.set_model(m);
-        }
-        if let Some(p) = polish {
-            client.set_polish(p);
-        }
-
-        client.transcribe(audio_path).await
-    }
-}
-
-impl Default for AsrClientWrapper {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
