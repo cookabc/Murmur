@@ -216,8 +216,10 @@ struct ShellPanelView: View {
 
                 if viewModel.diagnosticsExpanded {
                     VStack(spacing: 10) {
-                        diagnosticsRow(systemImage: "waveform", title: viewModel.ffmpegLine)
-                        diagnosticsRow(systemImage: "text.bubble", title: viewModel.coliLine)
+                        diagnosticsRow(systemImage: "waveform", title: viewModel.ffmpegLine,
+                                       alert: viewModel.ffmpegLine.contains("missing"))
+                        diagnosticsRow(systemImage: "text.bubble", title: viewModel.coliLine,
+                                       alert: viewModel.coliLine.contains("missing"))
                         diagnosticsRow(systemImage: "cpu", title: "Rust core \(viewModel.rustVersion)")
                     }
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -240,21 +242,21 @@ struct ShellPanelView: View {
     }
 
     @ViewBuilder
-    private func diagnosticsRow(systemImage: String, title: String) -> some View {
+    private func diagnosticsRow(systemImage: String, title: String, alert: Bool = false) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .font(.system(size: 13, weight: .bold))
                 .frame(width: 18)
-                .foregroundStyle(panelAccent)
+                .foregroundStyle(alert ? panelDanger : panelAccentSoft)
 
             Text(title)
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(panelText)
+                .foregroundStyle(alert ? panelDanger.opacity(0.90) : panelText)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(alert ? panelDanger.opacity(0.10) : panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     @ViewBuilder

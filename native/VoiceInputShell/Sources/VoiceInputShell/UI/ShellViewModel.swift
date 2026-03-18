@@ -81,6 +81,7 @@ final class ShellViewModel: ObservableObject {
             runtimeBadge = "Offline"
             title = "Engine unavailable"
             detail = "The dictation engine couldn’t load. Check the app is complete, then click Refresh."
+            rustVersion = "—"
             ffmpegLine = "ffmpeg unresolved"
             coliLine = "coli unresolved"
             recordingLine = "Unavailable"

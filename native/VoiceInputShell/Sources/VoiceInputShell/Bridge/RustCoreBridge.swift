@@ -105,7 +105,7 @@ final class RustCoreBridge {
 
     func version() -> String {
         guard let raw = versionFn() else {
-            return "unknown"
+            return "—"
         }
 
         defer { stringFreeFn(raw) }
