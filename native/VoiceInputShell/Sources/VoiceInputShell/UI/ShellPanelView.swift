@@ -74,18 +74,21 @@ struct ShellPanelView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(viewModel.title)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(panelText)
-                        .lineLimit(2)
-                    Text(viewModel.detail)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(panelMuted)
-                        .lineSpacing(2)
+                if !viewModel.isReady {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(viewModel.title)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundStyle(panelText)
+                            .lineLimit(2)
+                        Text(viewModel.detail)
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundStyle(panelMuted)
+                            .lineSpacing(2)
+                    }
+                    .padding(16)
+                    .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-                .padding(16)
-                .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 14) {
                     Text(viewModel.primaryActionTitle)
