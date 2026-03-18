@@ -2,15 +2,38 @@ import SwiftUI
 
 struct ShellPanelView: View {
     @ObservedObject var viewModel: ShellViewModel
+    @Environment(\.colorScheme) private var colorScheme
+    private var dark: Bool { colorScheme == .dark }
 
-    private let panelBackground = Color(red: 0.08, green: 0.12, blue: 0.13)
-    private let panelSurface = Color(red: 0.12, green: 0.18, blue: 0.18)
-    private let panelSurfaceStrong = Color(red: 0.18, green: 0.24, blue: 0.23)
-    private let panelText = Color(red: 0.95, green: 0.94, blue: 0.89)
-    private let panelMuted = Color(red: 0.67, green: 0.73, blue: 0.70)
+    private var panelBackground: Color {
+        dark ? Color(red: 0.08, green: 0.12, blue: 0.13)
+             : Color(red: 0.96, green: 0.96, blue: 0.95)
+    }
+    private var panelSurface: Color {
+        dark ? Color(red: 0.12, green: 0.18, blue: 0.18)
+             : Color(red: 0.92, green: 0.93, blue: 0.92)
+    }
+    private var panelSurfaceStrong: Color {
+        dark ? Color(red: 0.18, green: 0.24, blue: 0.23)
+             : Color(red: 0.86, green: 0.88, blue: 0.87)
+    }
+    private var panelText: Color {
+        dark ? Color(red: 0.95, green: 0.94, blue: 0.89)
+             : Color(red: 0.12, green: 0.13, blue: 0.15)
+    }
+    private var panelMuted: Color {
+        dark ? Color(red: 0.67, green: 0.73, blue: 0.70)
+             : Color(red: 0.42, green: 0.45, blue: 0.43)
+    }
     private let panelAccent = Color(red: 0.90, green: 0.58, blue: 0.31)
-    private let panelAccentSoft = Color(red: 0.31, green: 0.52, blue: 0.49)
-    private let panelDanger = Color(red: 0.75, green: 0.36, blue: 0.27)
+    private var panelAccentSoft: Color {
+        dark ? Color(red: 0.31, green: 0.52, blue: 0.49)
+             : Color(red: 0.22, green: 0.46, blue: 0.42)
+    }
+    private var panelDanger: Color {
+        dark ? Color(red: 0.75, green: 0.36, blue: 0.27)
+             : Color(red: 0.80, green: 0.28, blue: 0.20)
+    }
 
     private var heroTint: Color {
         if viewModel.isRecordingActive { return panelDanger }
@@ -31,19 +54,19 @@ struct ShellPanelView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [panelBackground, Color(red: 0.10, green: 0.16, blue: 0.17)],
+                colors: [panelBackground, dark ? Color(red: 0.10, green: 0.16, blue: 0.17) : Color(red: 0.93, green: 0.94, blue: 0.93)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
             Circle()
-                .fill(panelAccent.opacity(0.18))
+                .fill(panelAccent.opacity(dark ? 0.18 : 0.12))
                 .frame(width: 220, height: 220)
                 .blur(radius: 30)
                 .offset(x: 130, y: -170)
 
             Circle()
-                .fill(panelAccentSoft.opacity(0.22))
+                .fill(panelAccentSoft.opacity(dark ? 0.22 : 0.14))
                 .frame(width: 180, height: 180)
                 .blur(radius: 24)
                 .offset(x: -140, y: 170)
@@ -80,7 +103,7 @@ struct ShellPanelView: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(panelMuted)
                             .frame(width: 24, height: 24)
-                            .background(Color.white.opacity(0.10), in: Circle())
+                            .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -162,10 +185,10 @@ struct ShellPanelView: View {
                 if !viewModel.actionError.isEmpty {
                     Text(viewModel.actionError)
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(red: 1.0, green: 0.84, blue: 0.78))
+                        .foregroundStyle(dark ? Color(red: 1.0, green: 0.84, blue: 0.78) : Color(red: 0.60, green: 0.15, blue: 0.08))
                         .padding(14)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(red: 0.33, green: 0.15, blue: 0.13).opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .background((dark ? Color(red: 0.33, green: 0.15, blue: 0.13) : Color(red: 0.98, green: 0.90, blue: 0.88)).opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
 
                 if !viewModel.transcriptText.isEmpty {
@@ -257,7 +280,7 @@ struct ShellPanelView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .frame(width: 408, height: 500)
         .foregroundStyle(panelText)
-        .preferredColorScheme(.dark)
+
         .onAppear {
             viewModel.refreshRuntime()
         }

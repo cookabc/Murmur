@@ -18,15 +18,6 @@ struct RustSmokeStatus: Decodable {
     let coliPath: String?
     let ffmpegExists: Bool
     let coliExists: Bool
-
-    private enum CodingKeys: String, CodingKey {
-        case name
-        case version
-        case ffmpegPath = "ffmpeg_path"
-        case coliPath = "coli_path"
-        case ffmpegExists = "ffmpeg_exists"
-        case coliExists = "coli_exists"
-    }
 }
 
 struct RustTranscriptionResult: Decodable {
@@ -55,7 +46,13 @@ extension RustCoreBridgeError: LocalizedError {
 }
 
 final class RustCoreBridge {
-    static let shared = RustCoreBridge()
+    private static let _result: Result<RustCoreBridge, Error> = {
+        Result { try RustCoreBridge() }
+    }()
+
+    static func bridge() throws -> RustCoreBridge {
+        try _result.get()
+    }
 
     private let handle: UnsafeMutableRawPointer
     private let versionFn: VoiceCoreVersionFn
@@ -68,22 +65,23 @@ final class RustCoreBridge {
     private let transcribeAudioFn: VoiceCoreTranscribeAudioFn
     private let stringFreeFn: VoiceCoreStringFreeFn
 
-    private init() {
+    private init() throws {
         let libraryPath = AppPaths.rustCoreLibraryPath
         guard let handle = dlopen(libraryPath, RTLD_NOW | RTLD_LOCAL) else {
-            fatalError("Failed to load Rust core: \(libraryPath)")
+            let dlErr = dlerror().map { String(cString: $0) } ?? "unknown error"
+            throw RustCoreBridgeError.libraryNotFound("\(libraryPath) — \(dlErr)")
         }
 
         self.handle = handle
-        versionFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_version")
-        configureToolsFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_configure_tools")
-        smokeStatusFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_smoke_status_json")
-        lastErrorFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_last_error_message")
-        startRecordingFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_start_recording")
-        stopRecordingFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_stop_recording")
-        isRecordingFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_is_recording")
-        transcribeAudioFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_transcribe_audio")
-        stringFreeFn = RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_string_free")
+        versionFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_version")
+        configureToolsFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_configure_tools")
+        smokeStatusFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_smoke_status_json")
+        lastErrorFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_last_error_message")
+        startRecordingFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_start_recording")
+        stopRecordingFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_stop_recording")
+        isRecordingFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_is_recording")
+        transcribeAudioFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_transcribe_audio")
+        stringFreeFn = try RustCoreBridge.loadSymbol(handle: handle, name: "voice_input_core_string_free")
     }
 
     deinit {
@@ -175,9 +173,9 @@ final class RustCoreBridge {
         return message.isEmpty ? "Rust core call failed" : message
     }
 
-    private static func loadSymbol<T>(handle: UnsafeMutableRawPointer, name: String) -> T {
+    private static func loadSymbol<T>(handle: UnsafeMutableRawPointer, name: String) throws -> T {
         guard let symbol = dlsym(handle, name) else {
-            fatalError("Missing Rust core symbol: \(name)")
+            throw RustCoreBridgeError.symbolMissing(name)
         }
 
         return unsafeBitCast(symbol, to: T.self)

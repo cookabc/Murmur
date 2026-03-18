@@ -60,7 +60,7 @@ final class ShellViewModel: ObservableObject {
 
     func refreshRuntime() {
         do {
-            let bridge = RustCoreBridge.shared
+            let bridge = try RustCoreBridge.bridge()
             let summary = try bridge.runtimeSummary()
             let recording = try bridge.isRecording()
             rustVersion = bridge.version()
@@ -81,7 +81,7 @@ final class ShellViewModel: ObservableObject {
         } catch {
             runtimeBadge = "Offline"
             title = "Engine unavailable"
-            detail = "The dictation engine couldn’t load. Check the app is complete, then click Refresh."
+            detail = error.localizedDescription
             rustVersion = "—"
             ffmpegLine = "ffmpeg unresolved"
             coliLine = "coli unresolved"
@@ -98,7 +98,7 @@ final class ShellViewModel: ObservableObject {
         }
 
         do {
-            let path = try RustCoreBridge.shared.startRecording()
+            let path = try RustCoreBridge.bridge().startRecording()
             recordingPath = path
             recordingLine = "Recording live"
             actionError = ""
@@ -117,7 +117,7 @@ final class ShellViewModel: ObservableObject {
         }
 
         do {
-            try RustCoreBridge.shared.stopRecording()
+            try RustCoreBridge.bridge().stopRecording()
             recordingLine = "Recorded"
             actionError = ""
         } catch {
@@ -136,7 +136,7 @@ final class ShellViewModel: ObservableObject {
 
         Task.detached(priority: .userInitiated) {
             do {
-                let result = try RustCoreBridge.shared.transcribeAudio(at: path)
+                let result = try RustCoreBridge.bridge().transcribeAudio(at: path)
                 let text = result.text
                 var metaParts = [String]()
                 if let lang = result.lang, !lang.isEmpty {
