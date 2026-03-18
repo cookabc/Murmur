@@ -71,30 +71,25 @@ struct ShellPanelView: View {
                 .blur(radius: 24)
                 .offset(x: -140, y: 170)
 
-            ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(spacing: 0) {
+                // ── PINNED HEADER ──
                 HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Voice Input")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
                         Text("On-device dictation")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(panelMuted)
                     }
 
                     Spacer()
 
-                    VStack(alignment: .trailing, spacing: 6) {
-                        Text(viewModel.runtimeBadge)
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(badgeTint)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(badgeTint.opacity(0.18), in: Capsule())
-                        Text("Core \(viewModel.rustVersion)")
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(panelMuted)
-                    }
+                    Text(viewModel.runtimeBadge)
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(badgeTint)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(badgeTint.opacity(0.18), in: Capsule())
 
                     Button {
                         viewModel.onRequestDismiss?()
@@ -106,224 +101,185 @@ struct ShellPanelView: View {
                             .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
                     }
                     .buttonStyle(.plain)
-                }
-
-                if !viewModel.isReady {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(viewModel.title)
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
-                            .foregroundStyle(panelText)
-                            .lineLimit(2)
-                        Text(viewModel.detail)
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(panelMuted)
-                            .lineSpacing(2)
-                    }
-                    .padding(16)
-                    .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                Button {
-                    if viewModel.isRecordingActive {
-                        viewModel.stopRecording()
-                    } else {
-                        viewModel.startRecording()
-                    }
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: viewModel.isRecordingActive ? "stop.fill" : "mic.fill")
-                            .font(.system(size: 16, weight: .bold))
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(viewModel.isRecordingActive ? "Stop now" : "Start dictation")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                            Text(viewModel.recordingLine)
-                                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                .foregroundStyle(panelText.opacity(0.84))
+                    .contextMenu {
+                        Button("Quit Voice Input", role: .destructive) {
+                            viewModel.onRequestQuit?()
                         }
-                        Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(heroTint)
-                .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
+                .padding(.horizontal, 18)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
 
-                if !viewModel.recordingPath.isEmpty {
-                    HStack(spacing: 10) {
-                        Image(systemName: "waveform.badge.mic")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(panelAccentSoft)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Clip recorded")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundStyle(panelText)
-                            Text(URL(fileURLWithPath: viewModel.recordingPath).lastPathComponent)
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundStyle(panelMuted)
-                        }
-                        Spacer()
-                        Button {
-                            viewModel.toggleClipPlayback()
-                        } label: {
-                            Image(systemName: viewModel.isPlayingClip ? "stop.fill" : "play.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(panelAccent)
-                                .frame(width: 32, height: 32)
-                                .background(panelAccent.opacity(0.15), in: Circle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(14)
-                    .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
-                }
-
-                if !viewModel.actionError.isEmpty {
-                    Text(viewModel.actionError)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(dark ? Color(red: 1.0, green: 0.84, blue: 0.78) : Color(red: 0.60, green: 0.15, blue: 0.08))
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background((dark ? Color(red: 0.33, green: 0.15, blue: 0.13) : Color(red: 0.98, green: 0.90, blue: 0.88)).opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
-
-                if !viewModel.transcriptText.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("Transcript")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(panelMuted)
-                            Spacer()
-                            Button {
-                                viewModel.clearTranscript()
-                            } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 10, weight: .bold))
+                // ── SCROLLABLE CONTENT ──
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        if !viewModel.isReady {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(viewModel.title)
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundStyle(panelText)
+                                    .lineLimit(2)
+                                Text(viewModel.detail)
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
                                     .foregroundStyle(panelMuted)
-                                    .frame(width: 20, height: 20)
-                                    .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
+                                    .lineSpacing(2)
                             }
-                            .buttonStyle(.plain)
+                            .padding(14)
+                            .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
-                        Text(viewModel.transcriptText)
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundStyle(panelText)
-                            .textSelection(.enabled)
+                        Button {
+                            if viewModel.isRecordingActive {
+                                viewModel.stopRecording()
+                            } else {
+                                viewModel.startRecording()
+                            }
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: viewModel.isRecordingActive ? "stop.fill" : "mic.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(viewModel.isRecordingActive ? "Stop now" : "Start dictation")
+                                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                                    Text(viewModel.recordingLine)
+                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(panelText.opacity(0.84))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(heroTint)
+                        .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
 
-                        if !viewModel.transcriptMeta.isEmpty {
-                            Text(viewModel.transcriptMeta)
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundStyle(panelMuted)
+                        if !viewModel.recordingPath.isEmpty {
+                            HStack(spacing: 10) {
+                                Image(systemName: "waveform.badge.mic")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(panelAccentSoft)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Clip recorded")
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .foregroundStyle(panelText)
+                                    Text(URL(fileURLWithPath: viewModel.recordingPath).lastPathComponent)
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(panelMuted)
+                                }
+                                Spacer()
+                                Button {
+                                    viewModel.toggleClipPlayback()
+                                } label: {
+                                    Image(systemName: viewModel.isPlayingClip ? "stop.fill" : "play.fill")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundStyle(panelAccent)
+                                        .frame(width: 32, height: 32)
+                                        .background(panelAccent.opacity(0.15), in: Circle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(14)
+                            .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .transition(.opacity.combined(with: .scale(scale: 0.97)))
                         }
 
-                        HStack(spacing: 10) {
-                            Button("Copy") {
-                                viewModel.copyTranscript()
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(panelAccentSoft)
-
-                            Button("Paste") {
-                                viewModel.pasteTranscript()
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(panelAccent)
+                        if !viewModel.actionError.isEmpty {
+                            Text(viewModel.actionError)
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(dark ? Color(red: 1.0, green: 0.84, blue: 0.78) : Color(red: 0.60, green: 0.15, blue: 0.08))
+                                .padding(14)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background((dark ? Color(red: 0.33, green: 0.15, blue: 0.13) : Color(red: 0.98, green: 0.90, blue: 0.88)).opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         }
-                    }
-                    .padding(16)
-                    .background(panelSurfaceStrong.opacity(0.92), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
-                }
 
-                VStack(spacing: 10) {
-                    HStack(spacing: 10) {
-                        actionButton(
-                            title: viewModel.isTranscribing ? "Transcribing…" : "Transcribe",
-                            systemImage: viewModel.isTranscribing ? "hourglass" : "text.bubble.fill",
-                            tint: panelAccentSoft
-                        ) {
+                        if !viewModel.transcriptText.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack {
+                                    Text("Transcript")
+                                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                                        .foregroundStyle(panelMuted)
+                                    Spacer()
+                                    Button {
+                                        viewModel.clearTranscript()
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundStyle(panelMuted)
+                                            .frame(width: 20, height: 20)
+                                            .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+
+                                Text(viewModel.transcriptText)
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                    .foregroundStyle(panelText)
+                                    .textSelection(.enabled)
+
+                                if !viewModel.transcriptMeta.isEmpty {
+                                    Text(viewModel.transcriptMeta)
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(panelMuted)
+                                }
+
+                                HStack(spacing: 10) {
+                                    Button("Copy") {
+                                        viewModel.copyTranscript()
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .tint(panelAccentSoft)
+
+                                    Button("Paste") {
+                                        viewModel.pasteTranscript()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(panelAccent)
+                                }
+                            }
+                            .padding(16)
+                            .background(panelSurfaceStrong.opacity(0.92), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                        }
+
+                        Button {
                             viewModel.transcribeLatestRecording()
+                        } label: {
+                            Label(
+                                viewModel.isTranscribing ? "Transcribing\u{2026}" : "Transcribe",
+                                systemImage: viewModel.isTranscribing ? "hourglass" : "text.bubble.fill"
+                            )
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
                         }
+                        .buttonStyle(.bordered)
+                        .tint(panelAccentSoft)
                         .disabled(!viewModel.canTranscribe)
-
-                        actionButton(title: "Refresh", systemImage: "arrow.clockwise", tint: panelAccentSoft) {
-                            viewModel.refreshRuntime()
-                        }
                     }
-
-                    actionButton(title: viewModel.diagnosticsExpanded ? "Hide status" : "Show status", systemImage: viewModel.diagnosticsExpanded ? "eye.slash" : "waveform.path.ecg", tint: panelAccentSoft) {
-                        viewModel.toggleDiagnostics()
-                    }
+                    .animation(.easeOut(duration: 0.22), value: viewModel.isReady)
+                    .animation(.easeOut(duration: 0.18), value: viewModel.recordingPath)
+                    .animation(.easeOut(duration: 0.18), value: viewModel.transcriptText.isEmpty)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 12)
                 }
 
-                if viewModel.diagnosticsExpanded {
-                    VStack(spacing: 10) {
-                        diagnosticsRow(systemImage: "waveform", title: viewModel.ffmpegLine,
-                                       alert: viewModel.ffmpegLine.contains("missing"))
-                        diagnosticsRow(systemImage: "text.bubble", title: viewModel.coliLine,
-                                       alert: viewModel.coliLine.contains("missing"))
-                        diagnosticsRow(systemImage: "cpu", title: "Rust core \(viewModel.rustVersion)")
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
+                // ── PINNED STATUS FOOTER ──
+                Text(viewModel.statusFooter)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(panelMuted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(panelSurface.opacity(0.6))
             }
-            .animation(.easeOut(duration: 0.22), value: viewModel.isReady)
-            .animation(.easeOut(duration: 0.18), value: viewModel.recordingPath)
-            .animation(.easeOut(duration: 0.18), value: viewModel.diagnosticsExpanded)
-            .animation(.easeOut(duration: 0.18), value: viewModel.transcriptText.isEmpty)
-            .padding(18)
-            }  // end ScrollView
         }
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .frame(width: 408, height: 500)
         .foregroundStyle(panelText)
-
         .onAppear {
             viewModel.refreshRuntime()
-        }
-    }
-
-    @ViewBuilder
-    private func diagnosticsRow(systemImage: String, title: String, alert: Bool = false) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .bold))
-                .frame(width: 18)
-                .foregroundStyle(alert ? panelDanger : panelAccentSoft)
-
-            Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(alert ? panelDanger.opacity(0.90) : panelText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(alert ? panelDanger.opacity(0.10) : panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-
-    @ViewBuilder
-    private func actionButton(title: String, systemImage: String, prominent: Bool = false, tint: Color, action: @escaping () -> Void) -> some View {
-        if prominent {
-            Button(action: action) {
-                Label(title, systemImage: systemImage)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(tint)
-        } else {
-            Button(action: action) {
-                Label(title, systemImage: systemImage)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-            }
-            .buttonStyle(.bordered)
-            .tint(tint)
         }
     }
 }

@@ -30,6 +30,9 @@ final class PanelController {
         viewModel.onRequestDismiss = { [weak self] in
             self?.animatedClose()
         }
+        viewModel.onRequestQuit = {
+            NSApp.terminate(nil)
+        }
     }
 
     func togglePanel(relativeTo button: NSStatusBarButton?) {

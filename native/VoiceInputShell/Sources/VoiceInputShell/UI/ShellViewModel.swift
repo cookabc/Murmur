@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class ShellViewModel: ObservableObject {
     var onRequestDismiss: (() -> Void)?
+    var onRequestQuit: (() -> Void)?
 
     @Published var title = "Voice Input"
     @Published var detail = "Checking the dictation engine…"
@@ -16,7 +17,6 @@ final class ShellViewModel: ObservableObject {
     @Published var actionError = ""
     @Published var transcriptText = ""
     @Published var transcriptMeta = ""
-    @Published var diagnosticsExpanded = false
     @Published var isTranscribing = false
     @Published var isPlayingClip = false
     private var audioPlayer: AVAudioPlayer?
@@ -29,17 +29,6 @@ final class ShellViewModel: ObservableObject {
         recordingLine == "Recording live"
     }
 
-    var primaryActionTitle: String {
-        isRecordingActive ? "Stop recording" : "Start recording"
-    }
-
-    var primaryActionSubtitle: String {
-        if isRecordingActive {
-            return "Capture is live. Stop when you're ready to transcribe."
-        }
-
-        return isReady ? "Record a short clip, then transcribe and paste it." : "Engine isn’t ready yet — click Refresh to retry."
-    }
 
     var canStartRecording: Bool {
         isReady && !isRecordingActive
@@ -57,8 +46,10 @@ final class ShellViewModel: ObservableObject {
         !transcriptText.isEmpty
     }
 
-    var diagnosticsSummary: String {
-        "\(runtimeBadge) · \(ffmpegLine) · \(coliLine)"
+    var statusFooter: String {
+        let ff = ffmpegLine.contains("ready") ? "✓ ffmpeg" : "✗ ffmpeg"
+        let co = coliLine.contains("ready") ? "✓ coli" : "✗ coli"
+        return "\(ff)  ·  \(co)  ·  Core \(rustVersion)"
     }
 
     func refreshRuntime() {
@@ -75,7 +66,7 @@ final class ShellViewModel: ObservableObject {
             } else {
                 title = "Setup required"
                 let toolList = missingTools.joined(separator: " and ")
-                detail = "Install \(toolList) to enable dictation, then click Refresh."
+                detail = "Install \(toolList) to enable dictation."
             }
             ffmpegLine = statusLine(name: "ffmpeg", path: summary.ffmpegPath, available: summary.ffmpegExists)
             coliLine = statusLine(name: "coli", path: summary.coliPath, available: summary.coliExists)
@@ -231,10 +222,6 @@ final class ShellViewModel: ObservableObject {
     func clearTranscript() {
         transcriptText = ""
         transcriptMeta = ""
-    }
-
-    func toggleDiagnostics() {
-        diagnosticsExpanded.toggle()
     }
 
     private func statusLine(name: String, path: String?, available: Bool) -> String {

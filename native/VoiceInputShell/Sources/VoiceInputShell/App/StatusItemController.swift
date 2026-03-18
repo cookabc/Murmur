@@ -11,7 +11,6 @@ final class StatusItemController: NSObject {
     override init() {
         super.init()
         configureButton()
-        configureMenu()
         observeRecordingState()
     }
 
@@ -26,15 +25,11 @@ final class StatusItemController: NSObject {
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
     }
 
-    private func configureMenu() {
+    private func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        menu.addItem(withTitle: "Open Panel", action: #selector(openPanel), keyEquivalent: "")
-        menu.addItem(withTitle: "Refresh Status", action: #selector(refreshSmokeStatus), keyEquivalent: "r")
-        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Voice Input", action: #selector(quitApp), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
-        statusItem.menu = nil
-        statusItem.menu = menu
+        return menu
     }
 
     private func observeRecordingState() {
@@ -59,33 +54,18 @@ final class StatusItemController: NSObject {
             return
         }
 
-        switch event.type {
-        case .rightMouseUp:
+        if event.type == .rightMouseUp {
+            let menu = makeMenu()
+            statusItem.menu = menu
             statusItem.button?.performClick(nil)
-        default:
             statusItem.menu = nil
+        } else {
             panelController.togglePanel(relativeTo: statusItem.button)
-            configureMenu()
         }
-    }
-
-    @objc
-    private func openPanel() {
-        panelController.showPanel(relativeTo: statusItem.button)
-    }
-
-    @objc
-    private func refreshSmokeStatus() {
-        panelController.refreshRustStatus()
-        showPanel(relativeTo: statusItem.button)
     }
 
     @objc
     private func quitApp() {
         NSApp.terminate(nil)
-    }
-
-    private func showPanel(relativeTo button: NSStatusBarButton?) {
-        panelController.showPanel(relativeTo: button)
     }
 }
