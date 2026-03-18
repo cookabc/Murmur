@@ -25,6 +25,15 @@ cd native/VoiceInputShell
 open .stage/VoiceInputShell.app
 ```
 
+Canonical development launch:
+
+```bash
+cd native/VoiceInputShell
+./Scripts/run-dev-app.sh
+```
+
+This is the preferred way to test the native shell during development because it always rebuilds the staged bundle and launches the bundle layout the app will use in distribution.
+
 Optional overrides:
 
 - `VOICE_INPUT_FFMPEG_PATH=/absolute/path/to/ffmpeg`
