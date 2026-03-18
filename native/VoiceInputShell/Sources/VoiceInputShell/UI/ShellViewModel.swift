@@ -104,7 +104,6 @@ final class ShellViewModel: ObservableObject {
             actionError = ""
             transcriptText = ""
             transcriptMeta = ""
-            detail = "Recording through the shared Rust core. Stop when you're ready to transcribe."
         } catch {
             actionError = error.localizedDescription
             recordingLine = "Start failed"
@@ -121,9 +120,6 @@ final class ShellViewModel: ObservableObject {
             try RustCoreBridge.shared.stopRecording()
             recordingLine = "Recorded"
             actionError = ""
-            if !recordingPath.isEmpty {
-                detail = "Recording finished. You can transcribe the latest clip now."
-            }
         } catch {
             actionError = error.localizedDescription
             recordingLine = "Stop failed"
@@ -174,7 +170,6 @@ final class ShellViewModel: ObservableObject {
 
         TextInsertionService.copyToClipboard(transcriptText)
         actionError = ""
-        detail = "Transcript copied to the clipboard."
     }
 
     func pasteTranscript() {
@@ -186,7 +181,6 @@ final class ShellViewModel: ObservableObject {
         do {
             try TextInsertionService.pasteToFrontmostApp(transcriptText)
             actionError = ""
-            detail = "Transcript pasted into the frontmost app."
             onRequestDismiss?()
         } catch {
             actionError = error.localizedDescription

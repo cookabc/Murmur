@@ -145,6 +145,7 @@ struct ShellPanelView: View {
                     }
                     .padding(14)
                     .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .transition(.opacity.combined(with: .scale(scale: 0.97)))
                 }
 
                 if !viewModel.actionError.isEmpty {
@@ -238,6 +239,9 @@ struct ShellPanelView: View {
                         .foregroundStyle(panelMuted)
                 }
             }
+            .animation(.easeOut(duration: 0.22), value: viewModel.isReady)
+            .animation(.easeOut(duration: 0.18), value: viewModel.recordingPath)
+            .animation(.easeOut(duration: 0.18), value: viewModel.diagnosticsExpanded)
             .padding(18)
         }
         .frame(width: 408, height: 500)
