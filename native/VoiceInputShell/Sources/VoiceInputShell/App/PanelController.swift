@@ -11,7 +11,7 @@ final class PanelController {
         let hosting = NSHostingView(rootView: rootView)
 
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 408, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 408, height: 500),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -21,7 +21,7 @@ final class PanelController {
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.isReleasedWhenClosed = false
-        panel.hidesOnDeactivate = false
+        panel.hidesOnDeactivate = true
         panel.isMovableByWindowBackground = true
         panel.backgroundColor = .clear
         panel.isOpaque = false
@@ -30,6 +30,9 @@ final class PanelController {
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.contentView = hosting
+        viewModel.onRequestDismiss = { [weak panel] in
+            panel?.orderOut(nil)
+        }
     }
 
     func togglePanel(relativeTo button: NSStatusBarButton?) {

@@ -2,6 +2,8 @@ import Foundation
 
 @MainActor
 final class ShellViewModel: ObservableObject {
+    var onRequestDismiss: (() -> Void)?
+
     @Published var title = "Swift shell ready"
     @Published var detail = "The menu bar shell is live. Checking the local Rust runtime and bundled helpers."
     @Published var rustVersion = "unknown"
@@ -168,6 +170,7 @@ final class ShellViewModel: ObservableObject {
             try TextInsertionService.pasteToFrontmostApp(transcriptText)
             actionError = ""
             detail = "Transcript pasted into the frontmost app."
+            onRequestDismiss?()
         } catch {
             actionError = error.localizedDescription
         }
