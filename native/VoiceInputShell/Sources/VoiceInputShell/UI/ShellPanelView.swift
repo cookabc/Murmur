@@ -15,7 +15,17 @@ struct ShellPanelView: View {
     private var heroTint: Color {
         if viewModel.isRecordingActive { return panelDanger }
         if viewModel.isReady { return panelAccent }
+        if viewModel.runtimeBadge == "Needs setup" { return Color(red: 0.85, green: 0.70, blue: 0.22) }
         return panelSurfaceStrong
+    }
+
+    private var badgeTint: Color {
+        switch viewModel.runtimeBadge {
+        case "Ready":       return panelAccent
+        case "Needs setup": return Color(red: 0.85, green: 0.70, blue: 0.22)
+        case "Offline":     return panelDanger
+        default:            return panelMuted
+        }
     }
 
     var body: some View {
@@ -54,9 +64,10 @@ struct ShellPanelView: View {
                     VStack(alignment: .trailing, spacing: 8) {
                         Text(viewModel.runtimeBadge)
                             .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(badgeTint)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(viewModel.runtimeBadge == "Ready" ? panelAccent.opacity(0.22) : Color.white.opacity(0.12), in: Capsule())
+                            .background(badgeTint.opacity(0.18), in: Capsule())
                         Text("Core \(viewModel.rustVersion)")
                             .font(.system(size: 11, weight: .semibold, design: .monospaced))
                             .foregroundStyle(panelMuted)

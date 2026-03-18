@@ -64,10 +64,15 @@ final class ShellViewModel: ObservableObject {
             let recording = try bridge.isRecording()
             rustVersion = bridge.version()
             runtimeBadge = summary.ffmpegExists && summary.coliExists ? "Ready" : "Needs setup"
-            title = summary.ffmpegExists && summary.coliExists ? "Ready to dictate" : "Setup required"
-            detail = summary.ffmpegExists && summary.coliExists
-                ? "Record a clip, then transcribe and paste it into any app."
-                : "Install ffmpeg and coli, then click Refresh."
+            let missingTools = (!summary.ffmpegExists ? ["ffmpeg"] : []) + (!summary.coliExists ? ["coli"] : [])
+            if missingTools.isEmpty {
+                title = "Ready to dictate"
+                detail = "Record a clip, then transcribe and paste it into any app."
+            } else {
+                title = "Setup required"
+                let toolList = missingTools.joined(separator: " and ")
+                detail = "Install \(toolList) to enable dictation, then click Refresh."
+            }
             ffmpegLine = statusLine(name: "ffmpeg", path: summary.ffmpegPath, available: summary.ffmpegExists)
             coliLine = statusLine(name: "coli", path: summary.coliPath, available: summary.coliExists)
             recordingLine = recording ? "Recording live" : "Ready to record"
