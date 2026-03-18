@@ -4,7 +4,7 @@ import SwiftUI
 @MainActor
 final class PanelController {
     private let panel: NSPanel
-    private let viewModel = ShellViewModel()
+    let viewModel = ShellViewModel()
 
     init() {
         let rootView = ShellPanelView(viewModel: viewModel)

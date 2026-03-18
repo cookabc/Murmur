@@ -1,15 +1,18 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
 final class StatusItemController: NSObject {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let panelController = PanelController()
+    private var cancellables = Set<AnyCancellable>()
 
     override init() {
         super.init()
         configureButton()
         configureMenu()
+        observeRecordingState()
     }
 
     private func configureButton() {
@@ -17,9 +20,7 @@ final class StatusItemController: NSObject {
             return
         }
 
-        button.title = "Voice Input"
         button.image = NSImage(systemSymbolName: "waveform.circle.fill", accessibilityDescription: "Voice Input")
-        button.imagePosition = .imageLeading
         button.target = self
         button.action = #selector(handleStatusItemClick(_:))
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -28,12 +29,27 @@ final class StatusItemController: NSObject {
     private func configureMenu() {
         let menu = NSMenu()
         menu.addItem(withTitle: "Open Panel", action: #selector(openPanel), keyEquivalent: "")
-        menu.addItem(withTitle: "Check Rust Core", action: #selector(refreshSmokeStatus), keyEquivalent: "")
+        menu.addItem(withTitle: "Refresh Status", action: #selector(refreshSmokeStatus), keyEquivalent: "r")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Voice Input", action: #selector(quitApp), keyEquivalent: "q")
         menu.items.forEach { $0.target = self }
         statusItem.menu = nil
         statusItem.menu = menu
+    }
+
+    private func observeRecordingState() {
+        panelController.viewModel.$recordingLine
+            .receive(on: RunLoop.main)
+            .sink { [weak self] line in
+                self?.updateStatusIcon(isRecording: line == "Recording live")
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateStatusIcon(isRecording: Bool) {
+        let symbolName = isRecording ? "record.circle.fill" : "waveform.circle.fill"
+        let description = isRecording ? "Voice Input — Recording" : "Voice Input"
+        statusItem.button?.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: description)
     }
 
     @objc
