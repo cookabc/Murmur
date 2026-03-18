@@ -3,10 +3,11 @@ import Foundation
 @MainActor
 final class ShellViewModel: ObservableObject {
     @Published var title = "Swift shell ready"
-    @Published var detail = "The native menu bar shell is live. Load the Rust core to verify bundling paths."
+    @Published var detail = "The menu bar shell is live. Checking the local Rust runtime and bundled helpers."
     @Published var rustVersion = "unknown"
-    @Published var ffmpegLine = "ffmpeg: unresolved"
-    @Published var coliLine = "coli: unresolved"
+    @Published var runtimeBadge = "Checking"
+    @Published var ffmpegLine = "ffmpeg unresolved"
+    @Published var coliLine = "coli unresolved"
     @Published var recordingLine = "Idle"
     @Published var recordingPath = ""
     @Published var actionError = ""
@@ -19,18 +20,23 @@ final class ShellViewModel: ObservableObject {
             let summary = try bridge.runtimeSummary()
             let recording = try bridge.isRecording()
             rustVersion = bridge.version()
-            title = "Rust core connected"
-            detail = "The Swift shell loaded the Rust core, configured bundled helper paths, and can now drive recording directly through the shared backend."
-            ffmpegLine = "ffmpeg: \(summary.ffmpegPath ?? "missing") [\(summary.ffmpegExists ? "found" : "not found")]"
-            coliLine = "coli: \(summary.coliPath ?? "missing") [\(summary.coliExists ? "found" : "not found")]"
-            recordingLine = recording ? "Recording" : "Idle"
+            runtimeBadge = summary.ffmpegExists && summary.coliExists ? "Ready" : "Needs setup"
+            title = summary.ffmpegExists && summary.coliExists ? "Voice input is ready" : "Runtime needs attention"
+            detail = summary.ffmpegExists && summary.coliExists
+                ? "Local capture and transcription helpers are available. Record, transcribe, then paste into the frontmost app."
+                : "The shell loaded the Rust core, but one or more helper tools still need attention before dictation is fully ready."
+            ffmpegLine = statusLine(name: "ffmpeg", path: summary.ffmpegPath, available: summary.ffmpegExists)
+            coliLine = statusLine(name: "coli", path: summary.coliPath, available: summary.coliExists)
+            recordingLine = recording ? "Recording live" : "Ready to record"
             actionError = ""
         } catch {
+            runtimeBadge = "Offline"
             title = "Rust core unavailable"
             detail = error.localizedDescription
-            ffmpegLine = "ffmpeg: unresolved"
-            coliLine = "coli: unresolved"
+            ffmpegLine = "ffmpeg unresolved"
+            coliLine = "coli unresolved"
             recordingLine = "Unavailable"
+            transcriptText = ""
             transcriptMeta = ""
         }
     }
@@ -39,11 +45,11 @@ final class ShellViewModel: ObservableObject {
         do {
             let path = try RustCoreBridge.shared.startRecording()
             recordingPath = path
-            recordingLine = "Recording"
+            recordingLine = "Recording live"
             actionError = ""
             transcriptText = ""
             transcriptMeta = ""
-            detail = "Recording from the menu bar shell through the shared Rust core. Stop recording to flush the wav file for the next ASR step."
+            detail = "Recording through the shared Rust core. Stop when you're ready to transcribe."
         } catch {
             actionError = error.localizedDescription
             recordingLine = "Start failed"
@@ -53,10 +59,10 @@ final class ShellViewModel: ObservableObject {
     func stopRecording() {
         do {
             try RustCoreBridge.shared.stopRecording()
-            recordingLine = "Stopped"
+            recordingLine = "Recorded"
             actionError = ""
             if !recordingPath.isEmpty {
-                detail = "Recording finished. Latest wav file: \(recordingPath)"
+                detail = "Recording finished. You can transcribe the latest clip now."
             }
         } catch {
             actionError = error.localizedDescription
@@ -84,7 +90,7 @@ final class ShellViewModel: ObservableObject {
 
             transcriptMeta = metaParts.joined(separator: "  |  ")
             actionError = ""
-            detail = "Transcription completed through the shared Rust core."
+            detail = "Transcription completed. Copy it or paste it straight into the focused app."
         } catch {
             actionError = error.localizedDescription
         }
@@ -114,5 +120,10 @@ final class ShellViewModel: ObservableObject {
         } catch {
             actionError = error.localizedDescription
         }
+    }
+
+    private func statusLine(name: String, path: String?, available: Bool) -> String {
+        let location = path.flatMap { URL(fileURLWithPath: $0).lastPathComponent.isEmpty ? nil : URL(fileURLWithPath: $0).lastPathComponent } ?? "not found"
+        return available ? "\(name) ready · \(location)" : "\(name) missing · \(location)"
     }
 }

@@ -18,6 +18,15 @@ struct RustSmokeStatus: Decodable {
     let coliPath: String?
     let ffmpegExists: Bool
     let coliExists: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case version
+        case ffmpegPath = "ffmpeg_path"
+        case coliPath = "coli_path"
+        case ffmpegExists = "ffmpeg_exists"
+        case coliExists = "coli_exists"
+    }
 }
 
 struct RustTranscriptionResult: Decodable {
@@ -91,7 +100,7 @@ final class RustCoreBridge {
         defer { stringFreeFn(raw) }
 
         let data = Data(bytes: raw, count: strlen(raw))
-        return try JSONDecoder().decode(RustSmokeStatus.self, from: data)
+    return try Self.makeDecoder().decode(RustSmokeStatus.self, from: data)
     }
 
     func version() -> String {
@@ -138,7 +147,7 @@ final class RustCoreBridge {
 
                 defer { stringFreeFn(raw) }
                 let data = Data(bytes: raw, count: strlen(raw))
-                return try JSONDecoder().decode(RustTranscriptionResult.self, from: data)
+                return try Self.makeDecoder().decode(RustTranscriptionResult.self, from: data)
             }
         }
     }
@@ -172,5 +181,11 @@ final class RustCoreBridge {
         }
 
         return unsafeBitCast(symbol, to: T.self)
+    }
+
+    private static func makeDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return decoder
     }
 }

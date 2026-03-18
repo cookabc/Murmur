@@ -26,6 +26,7 @@ yarn-error.log*
 
 # Swift
 .build/
+.stage/
 .swiftpm/
 Package.resolved
 DerivedData/

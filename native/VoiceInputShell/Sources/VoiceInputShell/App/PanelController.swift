@@ -22,6 +22,13 @@ final class PanelController {
         panel.level = .floating
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
+        panel.isMovableByWindowBackground = true
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
+        panel.standardWindowButton(.closeButton)?.isHidden = true
+        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.contentView = hosting
     }
 
