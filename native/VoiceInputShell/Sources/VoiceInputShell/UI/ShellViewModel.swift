@@ -13,6 +13,47 @@ final class ShellViewModel: ObservableObject {
     @Published var actionError = ""
     @Published var transcriptText = ""
     @Published var transcriptMeta = ""
+    @Published var diagnosticsExpanded = false
+
+    var isReady: Bool {
+        runtimeBadge == "Ready"
+    }
+
+    var isRecordingActive: Bool {
+        recordingLine == "Recording live"
+    }
+
+    var primaryActionTitle: String {
+        isRecordingActive ? "Stop recording" : "Start recording"
+    }
+
+    var primaryActionSubtitle: String {
+        if isRecordingActive {
+            return "Capture is live. Stop when you're ready to transcribe."
+        }
+
+        return isReady ? "Capture a short clip, then transcribe and paste it." : "Fix runtime tools first, then start dictation."
+    }
+
+    var canStartRecording: Bool {
+        isReady && !isRecordingActive
+    }
+
+    var canStopRecording: Bool {
+        isRecordingActive
+    }
+
+    var canTranscribe: Bool {
+        !recordingPath.isEmpty && !isRecordingActive
+    }
+
+    var canPasteTranscript: Bool {
+        !transcriptText.isEmpty
+    }
+
+    var diagnosticsSummary: String {
+        "\(runtimeBadge) · \(ffmpegLine) · \(coliLine)"
+    }
 
     func refreshRuntime() {
         do {
@@ -42,6 +83,11 @@ final class ShellViewModel: ObservableObject {
     }
 
     func startRecording() {
+        guard canStartRecording else {
+            actionError = isReady ? "Recording is already running." : "Runtime is not ready for recording yet."
+            return
+        }
+
         do {
             let path = try RustCoreBridge.shared.startRecording()
             recordingPath = path
@@ -57,6 +103,11 @@ final class ShellViewModel: ObservableObject {
     }
 
     func stopRecording() {
+        guard canStopRecording else {
+            actionError = "There is no active recording to stop."
+            return
+        }
+
         do {
             try RustCoreBridge.shared.stopRecording()
             recordingLine = "Recorded"
@@ -120,6 +171,10 @@ final class ShellViewModel: ObservableObject {
         } catch {
             actionError = error.localizedDescription
         }
+    }
+
+    func toggleDiagnostics() {
+        diagnosticsExpanded.toggle()
     }
 
     private func statusLine(name: String, path: String?, available: Bool) -> String {

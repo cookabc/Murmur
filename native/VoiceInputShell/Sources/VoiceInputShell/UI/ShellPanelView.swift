@@ -10,6 +10,7 @@ struct ShellPanelView: View {
     private let panelMuted = Color(red: 0.67, green: 0.73, blue: 0.70)
     private let panelAccent = Color(red: 0.90, green: 0.58, blue: 0.31)
     private let panelAccentSoft = Color(red: 0.31, green: 0.52, blue: 0.49)
+    private let panelDanger = Color(red: 0.75, green: 0.36, blue: 0.27)
 
     var body: some View {
         ZStack {
@@ -68,11 +69,43 @@ struct ShellPanelView: View {
                 .padding(16)
                 .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
 
-                VStack(spacing: 10) {
-                    statusRow(systemImage: "waveform", title: viewModel.ffmpegLine)
-                    statusRow(systemImage: "text.bubble", title: viewModel.coliLine)
-                    statusRow(systemImage: "mic", title: viewModel.recordingLine)
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(viewModel.primaryActionTitle)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(panelText)
+
+                    Text(viewModel.primaryActionSubtitle)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(panelMuted)
+
+                    Button {
+                        if viewModel.isRecordingActive {
+                            viewModel.stopRecording()
+                        } else {
+                            viewModel.startRecording()
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: viewModel.isRecordingActive ? "stop.fill" : "mic.fill")
+                                .font(.system(size: 16, weight: .bold))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(viewModel.isRecordingActive ? "Stop now" : "Start dictation")
+                                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                                Text(viewModel.recordingLine)
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(panelText.opacity(0.84))
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 18)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(viewModel.isRecordingActive ? panelDanger : panelAccent)
+                    .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
                 }
+                .padding(16)
+                .background(panelSurfaceStrong.opacity(0.94), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
                 if !viewModel.recordingPath.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
@@ -136,20 +169,22 @@ struct ShellPanelView: View {
 
                 VStack(spacing: 10) {
                     HStack(spacing: 10) {
-                        actionButton(title: "Record", systemImage: "mic.fill", prominent: true, tint: panelAccent) {
-                            viewModel.startRecording()
-                        }
-
-                        actionButton(title: "Stop", systemImage: "stop.fill", tint: panelAccentSoft) {
-                            viewModel.stopRecording()
-                        }
-
                         actionButton(title: "Transcribe", systemImage: "text.bubble.fill", tint: panelAccentSoft) {
                             viewModel.transcribeLatestRecording()
                         }
+                        .disabled(!viewModel.canTranscribe)
+
+                        actionButton(title: "Paste", systemImage: "arrow.up.doc.fill", prominent: true, tint: panelAccentSoft) {
+                            viewModel.pasteTranscript()
+                        }
+                        .disabled(!viewModel.canPasteTranscript)
                     }
 
                     HStack(spacing: 10) {
+                        actionButton(title: viewModel.diagnosticsExpanded ? "Hide status" : "Show status", systemImage: viewModel.diagnosticsExpanded ? "eye.slash" : "waveform.path.ecg", tint: panelAccentSoft) {
+                            viewModel.toggleDiagnostics()
+                        }
+
                         actionButton(title: "Refresh", systemImage: "arrow.clockwise", tint: panelAccentSoft) {
                             viewModel.refreshRuntime()
                         }
@@ -159,6 +194,19 @@ struct ShellPanelView: View {
                         }
                     }
                 }
+
+                if viewModel.diagnosticsExpanded {
+                    VStack(spacing: 10) {
+                        diagnosticsRow(systemImage: "waveform", title: viewModel.ffmpegLine)
+                        diagnosticsRow(systemImage: "text.bubble", title: viewModel.coliLine)
+                        diagnosticsRow(systemImage: "cpu", title: "Rust core \(viewModel.rustVersion)")
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+
+                Text(viewModel.diagnosticsExpanded ? viewModel.diagnosticsSummary : "Status is available on demand so the panel stays focused on dictation.")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(panelMuted)
             }
             .padding(18)
         }
@@ -171,7 +219,7 @@ struct ShellPanelView: View {
     }
 
     @ViewBuilder
-    private func statusRow(systemImage: String, title: String) -> some View {
+    private func diagnosticsRow(systemImage: String, title: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)
                 .font(.system(size: 13, weight: .bold))
