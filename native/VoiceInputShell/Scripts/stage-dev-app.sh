@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 SHELL_DIR="$ROOT_DIR/native/VoiceInputShell"
-CORE_DIR="$ROOT_DIR/voice-core"
+CORE_DIR="$ROOT_DIR"
 BUILD_DIR="$SHELL_DIR/.build/arm64-apple-macosx/debug"
 APP_DIR="$SHELL_DIR/.stage/VoiceInputShell.app"
 CONTENTS_DIR="$APP_DIR/Contents"

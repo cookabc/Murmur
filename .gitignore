@@ -1,5 +1,6 @@
 # Rust
-/voice-core/target/
+/target/
+Cargo.lock
 **/*.rs.bk
 *.pdb
 
