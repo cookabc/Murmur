@@ -36,9 +36,9 @@ struct ShellPanelView: View {
     }
 
     private var heroTint: Color {
-        if viewModel.isRecordingActive { return panelDanger }
-        if viewModel.isReady { return panelAccent }
-        if viewModel.runtimeBadge == "Needs setup" { return Color(red: 0.85, green: 0.70, blue: 0.22) }
+        if viewModel.isRecordingActive { return panelDanger.opacity(0.85) }
+        if viewModel.isReady { return Color(red: 0.82, green: 0.52, blue: 0.26) } // softer amber
+        if viewModel.runtimeBadge == "Needs setup" { return Color(red: 0.75, green: 0.62, blue: 0.18) }
         return panelSurfaceStrong
     }
 
@@ -100,9 +100,9 @@ struct ShellPanelView: View {
                     } label: {
                         Image(systemName: "gearshape")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(panelMuted)
-                            .frame(width: 24, height: 24)
-                            .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
+                            .foregroundStyle(panelAccent.opacity(0.85))
+                            .frame(width: 26, height: 26)
+                            .background(panelAccent.opacity(0.15), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .help("Settings")
@@ -112,9 +112,9 @@ struct ShellPanelView: View {
                     } label: {
                         Image(systemName: "power")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(panelMuted)
-                            .frame(width: 24, height: 24)
-                            .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
+                            .foregroundStyle(panelDanger.opacity(0.75))
+                            .frame(width: 26, height: 26)
+                            .background(panelDanger.opacity(0.12), in: Circle())
                     }
                     .buttonStyle(.plain)
                     .help("Quit Voice Input")
@@ -125,7 +125,7 @@ struct ShellPanelView: View {
                         Image(systemName: "xmark")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundStyle(panelMuted)
-                            .frame(width: 24, height: 24)
+                            .frame(width: 26, height: 26)
                             .background((dark ? Color.white : Color.black).opacity(0.10), in: Circle())
                     }
                     .buttonStyle(.plain)
@@ -171,6 +171,7 @@ struct ShellPanelView: View {
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(heroTint)
+                            .buttonBorderShape(.roundedRectangle(radius: 16))
                             .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
                             .frame(maxWidth: .infinity)
 
