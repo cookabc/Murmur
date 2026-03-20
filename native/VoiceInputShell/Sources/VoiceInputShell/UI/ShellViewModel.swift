@@ -38,22 +38,25 @@ final class ShellViewModel: ObservableObject {
     }
 
     func refreshRuntime() {
-        Task { await core.requestPermissions() }
+        Task { @MainActor in
+            // Await permissions so the recognizer is authorized before the first recording.
+            await core.requestPermissions()
 
-        let coliExists = core.checkColiAvailable()
-        runtimeBadge = coliExists ? "Ready" : "Needs setup"
+            let coliExists = core.checkColiAvailable()
+            runtimeBadge = coliExists ? "Ready" : "Needs setup"
 
-        if coliExists {
-            title = "Ready to dictate"
-            detail = "Record a clip, then transcribe and paste it into any app."
-        } else {
-            title = "Setup required"
-            detail = "Install coli (@marswave/coli) to enable transcription."
+            if coliExists {
+                title = "Ready to dictate"
+                detail = "Record a clip, then transcribe and paste it into any app."
+            } else {
+                title = "Setup required"
+                detail = "Install coli (@marswave/coli) to enable transcription."
+            }
+
+            coliLine = statusLine(name: "coli", path: AppPaths.coliHelperPath, available: coliExists)
+            recordingLine = core.isRecording ? "Recording live" : "Ready to record"
+            actionError = ""
         }
-
-        coliLine = statusLine(name: "coli", path: AppPaths.coliHelperPath, available: coliExists)
-        recordingLine = core.isRecording ? "Recording live" : "Ready to record"
-        actionError = ""
     }
 
     func startRecording() {
@@ -66,11 +69,8 @@ final class ShellViewModel: ObservableObject {
 
         do {
             let path = try core.startRecording()
-            try core.startLiveTranscription { [weak self] partial in
-                Task { @MainActor [weak self] in
-                    self?.liveTranscript = partial
-                }
-            }
+            // Update recording state immediately — must happen before startLiveTranscription
+            // so a live-ASR failure never leaves the UI in a zombie "Start failed" state.
             recordingPath = path
             recordingLine = "Recording live"
             actionError = ""
@@ -81,6 +81,18 @@ final class ShellViewModel: ObservableObject {
         } catch {
             actionError = error.localizedDescription
             recordingLine = "Start failed"
+            return
+        }
+
+        // Live transcription is best-effort — recording continues even if unavailable.
+        do {
+            try core.startLiveTranscription { [weak self] partial in
+                Task { @MainActor [weak self] in
+                    self?.liveTranscript = partial
+                }
+            }
+        } catch {
+            // Speech recognition unavailable (e.g. not authorized yet); coli covers final ASR.
         }
     }
 

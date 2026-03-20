@@ -36,9 +36,8 @@ final class LiveSpeechRecognizer {
     private func beginTask(with rec: SFSpeechRecognizer) {
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
-        if rec.supportsOnDeviceRecognition {
-            req.requiresOnDeviceRecognition = true
-        }
+        // Do NOT require on-device recognition — server-side gives much faster
+        // and more reliable partial results on macOS, especially for non-English.
         request = req
 
         task = rec.recognitionTask(with: req) { [weak self] result, error in
