@@ -256,6 +256,7 @@ struct ShellPanelView: View {
                             Text(viewModel.actionError)
                                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                                 .foregroundStyle(dark ? Color(red: 1.0, green: 0.84, blue: 0.78) : Color(red: 0.60, green: 0.15, blue: 0.08))
+                                .textSelection(.enabled)
                                 .padding(14)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background((dark ? Color(red: 0.33, green: 0.15, blue: 0.13) : Color(red: 0.98, green: 0.90, blue: 0.88)).opacity(0.92), in: RoundedRectangle(cornerRadius: 18, style: .continuous))

@@ -2,15 +2,16 @@ import Foundation
 
 enum LLMPolisherError: Error, LocalizedError {
     case noApiKey
-    case httpError(Int, String)
+    case httpError(Int, String, String)  // code, body, url
     case unexpectedResponse
 
     var errorDescription: String? {
         switch self {
         case .noApiKey:
-            return "No API key saved. Click ✦ Polish and enter your OpenAI API key."
-        case .httpError(let code, let body):
-            return "LLM API error \(code): \(body.isEmpty ? "unknown" : body)"
+            return "No API key saved. Open Settings to enter your API key."
+        case .httpError(let code, let body, let url):
+            let snippet = body.isEmpty ? "(empty)" : String(body.prefix(200))
+            return "LLM API \(code) — \(url)\n\(snippet)"
         case .unexpectedResponse:
             return "Unexpected response from LLM API."
         }
@@ -59,7 +60,10 @@ actor LLMPolisher {
         while base.hasSuffix("/") { base = String(base.dropLast()) }
         let model   = UserDefaults.standard.string(forKey: Self.modelUD)   ?? "gpt-4o-mini"
 
-        guard let url = URL(string: "\(base)/v1/chat/completions") else {
+        let endpointURL = "\(base)/v1/chat/completions"
+        fputs("[LLMPolisher] POST \(endpointURL)  model=\(model)\n", stderr)
+
+        guard let url = URL(string: endpointURL) else {
             throw LLMPolisherError.unexpectedResponse
         }
 
@@ -86,7 +90,8 @@ actor LLMPolisher {
 
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
             let body = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            throw LLMPolisherError.httpError(http.statusCode, body)
+            fputs("[LLMPolisher] HTTP \(http.statusCode) from \(url.absoluteString)\n\(body)\n", stderr)
+            throw LLMPolisherError.httpError(http.statusCode, body, url.absoluteString)
         }
 
         struct Message:    Decodable { let content: String }
