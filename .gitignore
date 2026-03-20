@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Rust (legacy build artifacts)
+/target/
+
 # Swift / SPM
 .build/
 .stage/
