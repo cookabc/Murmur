@@ -109,6 +109,9 @@ struct SettingsView: View {
                                     .font(.system(size: 12, design: .monospaced))
                                     .textFieldStyle(.plain)
                                     .foregroundStyle(textColor)
+                                Text("/v1/…")
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(muted.opacity(0.6))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 11)
@@ -150,7 +153,7 @@ struct SettingsView: View {
                         Image(systemName: "lock.shield")
                             .font(.system(size: 13))
                             .foregroundStyle(muted)
-                        Text("Your API key is stored in UserDefaults on this Mac only. It is sent exclusively to your configured Base URL endpoint.")
+                        Text("Your API key is stored in UserDefaults on this Mac only. It is sent exclusively to your configured Base URL endpoint. Do not include /v1 in the Base URL — it is appended automatically.")
                             .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(muted)
                             .lineSpacing(3)

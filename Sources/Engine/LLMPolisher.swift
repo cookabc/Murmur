@@ -45,6 +45,8 @@ actor LLMPolisher {
     nonisolated func saveBaseURL(_ url: String) {
         var v = url.trimmingCharacters(in: .whitespaces)
         while v.hasSuffix("/") { v = String(v.dropLast()) }
+        // Strip trailing /v1 so we always append it ourselves.
+        if v.hasSuffix("/v1") { v = String(v.dropLast(3)) }
         UserDefaults.standard.set(v.isEmpty ? "https://api.openai.com" : v, forKey: Self.baseURLUD)
     }
 
@@ -58,6 +60,7 @@ actor LLMPolisher {
 
         var base = UserDefaults.standard.string(forKey: Self.baseURLUD) ?? "https://api.openai.com"
         while base.hasSuffix("/") { base = String(base.dropLast()) }
+        if base.hasSuffix("/v1") { base = String(base.dropLast(3)) }
         let model   = UserDefaults.standard.string(forKey: Self.modelUD)   ?? "gpt-4o-mini"
 
         let endpointURL = "\(base)/v1/chat/completions"
