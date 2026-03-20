@@ -174,7 +174,7 @@ struct ShellPanelView: View {
                             .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
                             .frame(maxWidth: .infinity)
 
-                            ZStack(alignment: .top) {
+                            ZStack(alignment: .center) {
                                 if viewModel.isRecordingActive {
                                     VStack(spacing: 10) {
                                         WaveformBarsView(level: viewModel.micLevel, color: panelDanger)
@@ -183,6 +183,7 @@ struct ShellPanelView: View {
                                             .foregroundStyle(panelDanger.opacity(0.8))
                                     }
                                     .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 84)
                                     .padding(12)
                                     .background(panelDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 } else if viewModel.isTranscribing {
@@ -193,23 +194,19 @@ struct ShellPanelView: View {
                                             .foregroundStyle(panelMuted)
                                     }
                                     .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 84)
                                     .padding(12)
                                     .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 } else if !viewModel.recordingPath.isEmpty {
-                                    VStack(alignment: .leading, spacing: 6) {
+                                    VStack(alignment: .center, spacing: 10) {
                                         HStack(spacing: 6) {
                                             Image(systemName: "waveform")
-                                                .font(.system(size: 11, weight: .semibold))
+                                                .font(.system(size: 12, weight: .semibold))
                                                 .foregroundStyle(panelAccentSoft)
                                             Text("Clip ready")
                                                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                                                 .foregroundStyle(panelText)
                                         }
-                                        Text(URL(fileURLWithPath: viewModel.recordingPath).lastPathComponent)
-                                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                            .foregroundStyle(panelMuted.opacity(0.7))
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
                                         Button {
                                             viewModel.toggleClipPlayback()
                                         } label: {
@@ -221,9 +218,22 @@ struct ShellPanelView: View {
                                         .buttonStyle(.bordered)
                                         .tint(panelAccentSoft)
                                     }
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 84)
                                     .padding(12)
                                     .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                } else {
+                                    // Idle empty state
+                                    VStack(spacing: 6) {
+                                        Image(systemName: "mic.badge.plus")
+                                            .font(.system(size: 20, weight: .light))
+                                            .foregroundStyle(panelMuted.opacity(0.5))
+                                        Text("Press Record\nto start")
+                                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                                            .foregroundStyle(panelMuted.opacity(0.5))
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .frame(maxWidth: .infinity, minHeight: 84)
                                 }
                             }
                             .frame(maxWidth: .infinity, minHeight: 84)
@@ -327,15 +337,15 @@ struct ShellPanelView: View {
                                         } label: {
                                             Label("Copy", systemImage: "doc.on.doc")
                                                 .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                                .frame(maxWidth: .infinity)
                                         }
-                                        .buttonStyle(.borderedProminent)
+                                        .buttonStyle(.bordered)
                                         .tint(Color(red: 0.62, green: 0.46, blue: 0.86))
                                     }
                                     .padding(16)
                                     .background(Color(red: 0.62, green: 0.46, blue: 0.86).opacity(dark ? 0.12 : 0.07))
                                 }
                             }
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .background(panelSurfaceStrong.opacity(0.92), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .transition(.opacity.combined(with: .scale(scale: 0.97)))
                         }

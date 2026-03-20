@@ -141,7 +141,15 @@ final class ShellViewModel: ObservableObject {
                 let result = try await vm.core.transcribeAudio(at: path)
                 let text = result.text
                 var metaParts = [String]()
-                if let lang = result.lang, !lang.isEmpty { metaParts.append("lang: \(lang)") }
+                if let lang = result.lang, !lang.isEmpty {
+                                    // Strip whisper token formatting e.g. "<|zh|>" → "zh"
+                                    let cleanLang = lang
+                                        .replacingOccurrences(of: "<|", with: "")
+                                        .replacingOccurrences(of: "|", with: "")
+                                        .replacingOccurrences(of: ">", with: "")
+                                        .trimmingCharacters(in: .whitespaces)
+                                    metaParts.append("lang: \(cleanLang)")
+                                }
                 if let dur = result.duration { metaParts.append(String(format: "audio: %.1fs", dur)) }
                 let meta = metaParts.joined(separator: "  |  ")
                 await MainActor.run {
