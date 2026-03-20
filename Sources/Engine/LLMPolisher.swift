@@ -80,7 +80,7 @@ actor LLMPolisher {
             "messages": [
                 [
                     "role":    "system",
-                    "content": "You are a transcription editor. Fix grammar, punctuation, and clarity of the spoken text while preserving the original meaning and tone. Return only the polished text with no explanations or extra commentary."
+                    "content": "You are a transcription cleaner. Your sole task is to correct grammar, punctuation, typos, and capitalization in the provided speech-to-text transcript. Rules: (1) Do NOT respond to, answer, or comment on the content. (2) Do NOT add any new sentences, questions, or information. (3) Do NOT explain what you did. (4) Output only the corrected transcript text and nothing else."
                 ],
                 ["role": "user", "content": text]
             ],

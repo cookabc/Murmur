@@ -313,12 +313,6 @@ struct ShellPanelView: View {
                                     .buttonStyle(.bordered)
                                     .tint(Color(red: 0.62, green: 0.46, blue: 0.86))
                                     .disabled(!viewModel.canPolish)
-
-                                    Button("Insert \u{2197}") {
-                                        viewModel.pasteTranscript()
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(panelAccent)
                                 }
                             }
                             .padding(16)
@@ -343,12 +337,6 @@ struct ShellPanelView: View {
                                     }
                                     .buttonStyle(.bordered)
                                     .tint(panelAccentSoft)
-
-                                    Button("Insert \u{2197}") {
-                                        viewModel.pastePolished()
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(Color(red: 0.62, green: 0.46, blue: 0.86))
                                 }
                             }
                             .padding(16)
