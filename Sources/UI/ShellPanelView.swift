@@ -149,6 +149,7 @@ struct ShellPanelView: View {
 
                         // ── Record + Clip side by side ──
                         HStack(alignment: .top, spacing: 10) {
+                            // Record — soft tinted card, plain style to match clip cards
                             Button {
                                 if viewModel.isRecordingActive {
                                     viewModel.stopRecording()
@@ -159,21 +160,27 @@ struct ShellPanelView: View {
                                 VStack(spacing: 6) {
                                     Image(systemName: viewModel.isRecordingActive ? "stop.fill" : "mic.fill")
                                         .font(.system(size: 22, weight: .bold))
+                                        .foregroundStyle(viewModel.isRecordingActive ? panelDanger : heroTint)
                                     Text(viewModel.isRecordingActive ? "Stop" : "Record")
                                         .font(.system(size: 14, weight: .bold, design: .rounded))
+                                        .foregroundStyle(viewModel.isRecordingActive ? panelDanger : panelText)
                                     if viewModel.isRecordingActive {
                                         Text(viewModel.recordingTimeString)
                                             .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                            .foregroundStyle(.white.opacity(0.85))
+                                            .foregroundStyle(panelDanger.opacity(0.7))
                                     }
                                 }
-                                .frame(maxWidth: .infinity, minHeight: 84)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(heroTint)
-                            .buttonBorderShape(.roundedRectangle(radius: 16))
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(viewModel.isRecordingActive
+                                        ? panelDanger.opacity(dark ? 0.13 : 0.09)
+                                        : heroTint.opacity(dark ? 0.13 : 0.09))
+                            )
                             .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
-                            .frame(maxWidth: .infinity)
 
                             ZStack(alignment: .center) {
                                 if viewModel.isRecordingActive {
@@ -183,9 +190,7 @@ struct ShellPanelView: View {
                                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                                             .foregroundStyle(panelDanger.opacity(0.8))
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(minHeight: 84)
-                                    .padding(12)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                                     .background(panelDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 } else if viewModel.isTranscribing {
                                     VStack(spacing: 8) {
@@ -194,9 +199,7 @@ struct ShellPanelView: View {
                                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                                             .foregroundStyle(panelMuted)
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(minHeight: 84)
-                                    .padding(12)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                                     .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 } else if !viewModel.recordingPath.isEmpty {
                                     VStack(alignment: .center, spacing: 10) {
@@ -219,9 +222,7 @@ struct ShellPanelView: View {
                                         .buttonStyle(.bordered)
                                         .tint(panelAccentSoft)
                                     }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(minHeight: 84)
-                                    .padding(12)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                                     .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 } else {
                                     // Idle empty state
@@ -234,15 +235,16 @@ struct ShellPanelView: View {
                                             .foregroundStyle(panelMuted.opacity(0.5))
                                             .multilineTextAlignment(.center)
                                     }
-                                    .frame(maxWidth: .infinity, minHeight: 84)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                                             .stroke((dark ? Color.white : Color.black).opacity(0.10), lineWidth: 1)
                                     )
                                 }
                             }
-                            .frame(maxWidth: .infinity, minHeight: 84)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
+                        .frame(minHeight: 108)
 
                         if !viewModel.actionError.isEmpty {
                             Text(viewModel.actionError)
