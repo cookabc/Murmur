@@ -147,65 +147,48 @@ struct ShellPanelView: View {
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
-                        // ── Record + Clip side by side ──
-                        HStack(alignment: .top, spacing: 10) {
-                            // Record — soft tinted card, plain style to match clip cards
-                            Button {
-                                if viewModel.isRecordingActive {
-                                    viewModel.stopRecording()
-                                } else {
-                                    viewModel.startRecording()
-                                }
-                            } label: {
-                                VStack(spacing: 6) {
-                                    Image(systemName: viewModel.isRecordingActive ? "stop.fill" : "mic.fill")
-                                        .font(.system(size: 22, weight: .bold))
-                                        .foregroundStyle(viewModel.isRecordingActive ? panelDanger : heroTint)
-                                    Text(viewModel.isRecordingActive ? "Stop" : "Record")
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .foregroundStyle(viewModel.isRecordingActive ? panelDanger : panelText)
-                                    if viewModel.isRecordingActive {
-                                        Text(viewModel.recordingTimeString)
-                                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                            .foregroundStyle(panelDanger.opacity(0.7))
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                            .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(viewModel.isRecordingActive
-                                        ? panelDanger.opacity(dark ? 0.13 : 0.09)
-                                        : heroTint.opacity(dark ? 0.13 : 0.09))
-                            )
-                            .disabled(!viewModel.canStartRecording && !viewModel.canStopRecording)
+                        // ── Unified Record / Clip card ──
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(viewModel.isRecordingActive
+                                    ? panelDanger.opacity(dark ? 0.13 : 0.09)
+                                    : panelSurface.opacity(dark ? 0.88 : 0.80))
 
-                            ZStack(alignment: .center) {
-                                if viewModel.isRecordingActive {
-                                    VStack(spacing: 10) {
-                                        WaveformBarsView(level: viewModel.micLevel, color: panelDanger)
-                                        Text("Listening\u{2026}")
-                                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                            .foregroundStyle(panelDanger.opacity(0.8))
+                            if viewModel.isRecordingActive {
+                                // ── Recording ──
+                                VStack(spacing: 10) {
+                                    WaveformBarsView(level: viewModel.micLevel, color: panelDanger)
+                                    Text(viewModel.recordingTimeString)
+                                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                        .foregroundStyle(panelDanger.opacity(0.8))
+                                    Button {
+                                        viewModel.stopRecording()
+                                    } label: {
+                                        Label("Stop", systemImage: "stop.fill")
+                                            .font(.system(size: 12, weight: .bold, design: .rounded))
                                     }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(panelDanger.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                } else if viewModel.isTranscribing {
-                                    VStack(spacing: 8) {
-                                        ProgressView().scaleEffect(0.85)
-                                        Text("Transcribing\u{2026}")
-                                            .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                            .foregroundStyle(panelMuted)
-                                    }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                } else if !viewModel.recordingPath.isEmpty {
-                                    VStack(alignment: .center, spacing: 10) {
-                                        HStack(spacing: 6) {
+                                    .buttonStyle(.bordered)
+                                    .tint(panelDanger)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                            } else if viewModel.isTranscribing {
+                                // ── Transcribing ──
+                                VStack(spacing: 8) {
+                                    ProgressView().scaleEffect(0.85)
+                                    Text("Transcribing\u{2026}")
+                                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(panelMuted)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                            } else if !viewModel.recordingPath.isEmpty {
+                                // ── Clip ready ──
+                                HStack(spacing: 14) {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        HStack(spacing: 5) {
                                             Image(systemName: "waveform")
-                                                .font(.system(size: 12, weight: .semibold))
+                                                .font(.system(size: 11, weight: .semibold))
                                                 .foregroundStyle(panelAccentSoft)
                                             Text("Clip ready")
                                                 .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -217,34 +200,45 @@ struct ShellPanelView: View {
                                             Label(viewModel.isPlayingClip ? "Stop" : "Play",
                                                   systemImage: viewModel.isPlayingClip ? "stop.fill" : "play.fill")
                                                 .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                                .frame(maxWidth: .infinity)
                                         }
                                         .buttonStyle(.bordered)
                                         .tint(panelAccentSoft)
                                     }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(panelSurface.opacity(0.88), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                                } else {
-                                    // Idle empty state
-                                    VStack(spacing: 6) {
-                                        Image(systemName: "mic.badge.plus")
-                                            .font(.system(size: 20, weight: .light))
-                                            .foregroundStyle(panelMuted.opacity(0.5))
-                                        Text("Press Record\nto start")
-                                            .font(.system(size: 11, weight: .medium, design: .rounded))
-                                            .foregroundStyle(panelMuted.opacity(0.5))
-                                            .multilineTextAlignment(.center)
+                                    Spacer()
+                                    Button {
+                                        viewModel.startRecording()
+                                    } label: {
+                                        Label("Record", systemImage: "mic.fill")
+                                            .font(.system(size: 12, weight: .bold, design: .rounded))
                                     }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .stroke((dark ? Color.white : Color.black).opacity(0.10), lineWidth: 1)
-                                    )
+                                    .buttonStyle(.bordered)
+                                    .tint(heroTint)
+                                    .disabled(!viewModel.canStartRecording)
                                 }
+                                .frame(maxWidth: .infinity)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                            } else {
+                                // ── Idle ──
+                                Button {
+                                    viewModel.startRecording()
+                                } label: {
+                                    VStack(spacing: 7) {
+                                        Image(systemName: "mic.fill")
+                                            .font(.system(size: 24, weight: .bold))
+                                            .foregroundStyle(heroTint)
+                                        Text("Record")
+                                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                                            .foregroundStyle(panelText)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!viewModel.canStartRecording)
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
-                        .frame(minHeight: 108)
+                        .frame(maxWidth: .infinity, minHeight: 108)
 
                         if !viewModel.actionError.isEmpty {
                             Text(viewModel.actionError)
@@ -370,7 +364,16 @@ struct ShellPanelView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(16)
-                            .background(Color(red: 0.62, green: 0.46, blue: 0.86).opacity(dark ? 0.10 : 0.06))
+                            .background(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 0,
+                                    bottomLeadingRadius: 20,
+                                    bottomTrailingRadius: 20,
+                                    topTrailingRadius: 0,
+                                    style: .continuous
+                                )
+                                .fill(Color(red: 0.62, green: 0.46, blue: 0.86).opacity(dark ? 0.10 : 0.06))
+                            )
                         }
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .background(panelSurfaceStrong.opacity(0.92), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
