@@ -145,10 +145,42 @@ struct SettingsView: View {
                             presetChip("Groq",
                                        url: "https://api.groq.com/openai",
                                        m: "llama-3.3-70b-versatile")
-                            presetChip("Ollama",
+                            presetChip("Qwen",
                                        url: "http://localhost:11434/v1",
-                                       m: "llama3.2")
+                                       m: "qwen2.5:7b")
                         }
+
+                        sectionHeader("RUNTIME")
+                            .padding(.top, 4)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: viewModel.llmHint.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(viewModel.llmHint.isEmpty ? Color.green.opacity(0.8) : Color.orange.opacity(0.9))
+                                Text(viewModel.llmLine)
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(textColor)
+                                Spacer()
+                                Button("Refresh") {
+                                    Task { @MainActor in
+                                        await viewModel.refreshLLMRuntime()
+                                    }
+                                }
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundStyle(accent)
+                                .buttonStyle(.plain)
+                            }
+
+                            if !viewModel.llmHint.isEmpty {
+                                Text(viewModel.llmHint)
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(muted)
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .background(surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
 
                     // ── GLOBAL HOTKEY ──
@@ -253,7 +285,7 @@ struct SettingsView: View {
                         Image(systemName: "lock.shield")
                             .font(.system(size: 13))
                             .foregroundStyle(muted)
-                        Text("Your API key is stored in UserDefaults on this Mac only. It is sent exclusively to your configured Base URL endpoint. Do not include /v1 in the Base URL — it is appended automatically.")
+                        Text("Your API key is stored in UserDefaults on this Mac only and is sent only to your configured Base URL endpoint when that endpoint requires one. Local models such as Ollama on localhost do not need an API key. Do not include /v1 in the Base URL — it is appended automatically.")
                             .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(muted)
                             .lineSpacing(3)

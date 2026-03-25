@@ -8,7 +8,7 @@ enum LLMPolisherError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noApiKey:
-            return "No API key saved. Open Settings to enter your API key."
+            return "No API key saved. Open Settings to enter your API key, or use a local endpoint that does not require one."
         case .httpError(let code, let body, let url):
             let snippet = body.isEmpty ? "(empty)" : String(body.prefix(200))
             return "LLM API \(code) — \(url)\n\(snippet)"
@@ -20,6 +20,12 @@ enum LLMPolisherError: Error, LocalizedError {
 
 actor LLMPolisher {
     static let shared = LLMPolisher()
+
+    struct RuntimeProbe {
+        let line: String
+        let isReady: Bool
+        let actionHint: String?
+    }
 
     private static let apiKeyUD   = "llm_polish_api_key"
     private static let baseURLUD  = "llm_polish_base_url"
@@ -33,8 +39,28 @@ actor LLMPolisher {
         UserDefaults.standard.string(forKey: Self.baseURLUD) ?? "https://api.openai.com"
     }
 
+    nonisolated var normalizedBaseURL: String {
+        var base = baseURL.trimmingCharacters(in: .whitespaces)
+        while base.hasSuffix("/") { base = String(base.dropLast()) }
+        if base.hasSuffix("/v1") { base = String(base.dropLast(3)) }
+        return base.isEmpty ? "https://api.openai.com" : base
+    }
+
+    nonisolated var requiresAPIKey: Bool {
+        guard let url = URL(string: normalizedBaseURL), let host = url.host?.lowercased() else {
+            return true
+        }
+
+        return !(host == "localhost" || host == "127.0.0.1" || host == "::1")
+    }
+
     nonisolated var model: String {
         UserDefaults.standard.string(forKey: Self.modelUD) ?? "gpt-4o-mini"
+    }
+
+    nonisolated var configuredModel: String {
+        let m = model.trimmingCharacters(in: .whitespaces)
+        return m.isEmpty ? "gpt-4o-mini" : m
     }
 
     nonisolated func saveApiKey(_ key: String) {
@@ -55,13 +81,76 @@ actor LLMPolisher {
         UserDefaults.standard.set(v.isEmpty ? "gpt-4o-mini" : v, forKey: Self.modelUD)
     }
 
-    func polish(text: String, dictionary: [String] = []) async throws -> String {
-        guard let key = apiKey else { throw LLMPolisherError.noApiKey }
+    func runtimeProbe() async -> RuntimeProbe {
+        if requiresAPIKey {
+            return RuntimeProbe(
+                line: "Remote endpoint configured · API key required",
+                isReady: apiKey != nil,
+                actionHint: apiKey == nil ? "Enter API key in Settings." : nil
+            )
+        }
 
-        var base = UserDefaults.standard.string(forKey: Self.baseURLUD) ?? "https://api.openai.com"
-        while base.hasSuffix("/") { base = String(base.dropLast()) }
-        if base.hasSuffix("/v1") { base = String(base.dropLast(3)) }
-        let model   = UserDefaults.standard.string(forKey: Self.modelUD)   ?? "gpt-4o-mini"
+        guard let url = URL(string: "\(normalizedBaseURL)/api/tags") else {
+            return RuntimeProbe(
+                line: "Local endpoint URL invalid",
+                isReady: false,
+                actionHint: "Use a valid localhost base URL, e.g. http://localhost:11434"
+            )
+        }
+
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 3
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                return RuntimeProbe(
+                    line: "Local model server unreachable",
+                    isReady: false,
+                    actionHint: "Start Ollama and ensure it is listening on localhost."
+                )
+            }
+
+            struct TagResponse: Decodable {
+                struct Model: Decodable { let name: String }
+                let models: [Model]
+            }
+
+            let decoded = try JSONDecoder().decode(TagResponse.self, from: data)
+            let names = Set(decoded.models.map(\ .name))
+            let target = configuredModel
+            let hasModel = names.contains(target) || names.contains(where: { $0.hasPrefix("\(target):") })
+
+            if hasModel {
+                return RuntimeProbe(
+                    line: "Local runtime ready · model: \(target)",
+                    isReady: true,
+                    actionHint: nil
+                )
+            }
+
+            return RuntimeProbe(
+                line: "Local runtime ready · model missing: \(target)",
+                isReady: false,
+                actionHint: "Run: ollama pull \(target)"
+            )
+        } catch {
+            return RuntimeProbe(
+                line: "Local model server unreachable",
+                isReady: false,
+                actionHint: "Install/start Ollama and retry."
+            )
+        }
+    }
+
+    func polish(text: String, dictionary: [String] = []) async throws -> String {
+        let key = apiKey
+        if requiresAPIKey && key == nil {
+            throw LLMPolisherError.noApiKey
+        }
+
+        let base = normalizedBaseURL
+        let model   = configuredModel
 
         let endpointURL = "\(base)/v1/chat/completions"
         fputs("[LLMPolisher] POST \(endpointURL)  model=\(model)\n", stderr)
@@ -72,11 +161,23 @@ actor LLMPolisher {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        if let key, requiresAPIKey {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let systemPrompt: String
-        let baseRule = "You are a transcription cleaner. Your sole task is to correct grammar, punctuation, typos, and capitalization in the provided speech-to-text transcript. Rules: (1) Do NOT respond to, answer, or comment on the content. (2) Do NOT add any new sentences, questions, or information. (3) Do NOT explain what you did. (4) Output only the corrected transcript text and nothing else."
+        let baseRule = """
+            You are a transcription cleaner. Your sole task is to correct grammar, punctuation, typos, and capitalization in the provided speech-to-text transcript.
+            Rules:
+            (1) Do NOT respond to, answer, or comment on the content.
+            (2) Do NOT add any new sentences, questions, or information.
+            (3) Do NOT explain what you did.
+            (4) Output only the corrected transcript text and nothing else.
+            (5) For Chinese text: use correct Chinese punctuation (\u{FF0C}\u{3002}\u{FF01}\u{FF1F}\u{3001}\u{FF1A}\u{FF1B}), do NOT convert Chinese to English or add English punctuation to Chinese sentences.
+            (6) For mixed Chinese-English text: keep each language\u{2019}s punctuation conventions, do not merge or replace.
+            (7) Preserve the original language \u{2014} never translate between languages.
+            """
         if dictionary.isEmpty {
             systemPrompt = baseRule
         } else {

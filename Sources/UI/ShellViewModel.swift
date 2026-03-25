@@ -18,6 +18,8 @@ final class ShellViewModel: ObservableObject {
     @Published var detail = "Checking the dictation engine…"
     @Published var runtimeBadge = "Checking"
     @Published var coliLine = "coli unresolved"
+    @Published var llmLine = "LLM runtime unresolved"
+    @Published var llmHint = ""
     @Published var recordingLine = "Idle"
     @Published var recordingPath = ""
     @Published var actionError = ""
@@ -37,8 +39,11 @@ final class ShellViewModel: ObservableObject {
     @Published var compactMode: Bool = false
     /// Brief human-readable status shown in the compact pill.
     @Published var autoFlowStatus: String = ""
+    /// True while TTS is reading aloud for proofing.
+    @Published var isSpeakingTTS: Bool = false
     private var audioPlayer: AVAudioPlayer?
     private var recordingTimer: Timer?
+    private let tts = TextToSpeechService.shared
 
     private let core = VoiceCoreService()
 
@@ -142,9 +147,16 @@ final class ShellViewModel: ObservableObject {
             }
 
             coliLine = statusLine(name: "coli", path: AppPaths.coliHelperPath, available: coliExists)
+            await self.refreshLLMRuntime()
             recordingLine = core.isRecording ? "Recording live" : "Ready to record"
             actionError = ""
         }
+    }
+
+    func refreshLLMRuntime() async {
+        let probe = await LLMPolisher.shared.runtimeProbe()
+        llmLine = probe.line
+        llmHint = probe.actionHint ?? ""
     }
 
     func startRecording() {
@@ -154,6 +166,7 @@ final class ShellViewModel: ObservableObject {
         }
 
         stopClipPlayback()
+        stopTTS()
 
         do {
             let path = try core.startRecording()
@@ -241,7 +254,8 @@ final class ShellViewModel: ObservableObject {
                         // Require at least 4 words to justify an LLM call.
                         let wordCount = text.split(whereSeparator: \.isWhitespace).count
                         let hasContent = wordCount >= 4
-                        if LLMPolisher.shared.apiKey != nil && hasContent {
+                        let canPolishLocally = !LLMPolisher.shared.requiresAPIKey || LLMPolisher.shared.apiKey != nil
+                        if canPolishLocally && hasContent {
                             vm.autoFlowStatus = "Polishing…"
                             vm.polishTranscript()
                         } else {
@@ -323,6 +337,29 @@ final class ShellViewModel: ObservableObject {
         transcriptText = ""
         transcriptMeta = ""
         polishedText = ""
+        stopTTS()
+    }
+
+    // MARK: - TTS Proofread
+
+    /// Speak the best available text (polished > transcript) aloud.
+    func toggleTTS() {
+        if isSpeakingTTS {
+            stopTTS()
+        } else {
+            let text = polishedText.isEmpty ? transcriptText : polishedText
+            guard !text.isEmpty else { return }
+            tts.onStateChange = { [weak self] speaking in
+                self?.isSpeakingTTS = speaking
+            }
+            tts.speak(text)
+            isSpeakingTTS = true
+        }
+    }
+
+    func stopTTS() {
+        tts.stop()
+        isSpeakingTTS = false
     }
 
     // MARK: - LLM Polish
@@ -330,14 +367,17 @@ final class ShellViewModel: ObservableObject {
     func openSettings() {
         showSettings = true
         onRequestFocus?()
+        Task { @MainActor in
+            await self.refreshLLMRuntime()
+        }
     }
     func closeSettings() { showSettings = false }
 
     func polishTranscript() {
         guard canPolish else { return }
 
-        if LLMPolisher.shared.apiKey == nil {
-            actionError = "Enter your API key in Settings to enable polishing."
+        if LLMPolisher.shared.requiresAPIKey && LLMPolisher.shared.apiKey == nil {
+            actionError = "Enter your API key in Settings to enable polishing, or switch to a local model endpoint."
             showSettings = true
             return
         }
@@ -350,6 +390,21 @@ final class ShellViewModel: ObservableObject {
 
         Task.detached(priority: .userInitiated) {
             do {
+                if !LLMPolisher.shared.requiresAPIKey {
+                    let probe = await LLMPolisher.shared.runtimeProbe()
+                    guard probe.isReady else {
+                        let message = probe.actionHint ?? probe.line
+                        await MainActor.run {
+                            vm.actionError = message
+                            vm.isPolishing = false
+                            vm.showSettings = true
+                            vm.llmLine = probe.line
+                            vm.llmHint = probe.actionHint ?? ""
+                        }
+                        return
+                    }
+                }
+
                 let polished = try await LLMPolisher.shared.polish(text: text, dictionary: dictionary)
                 await MainActor.run {
                     vm.polishedText = polished
