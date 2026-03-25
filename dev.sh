@@ -31,6 +31,7 @@ APP_DIR="$ROOT_DIR/.stage/Murmur.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 HELPERS_DIR="$CONTENTS_DIR/Helpers"
+RESOURCES_DIR="$CONTENTS_DIR/Resources"
 
 COLI_PATH="${VOICE_INPUT_COLI_PATH:-$(command -v coli || true)}"
 
@@ -47,9 +48,13 @@ popd >/dev/null
 
 # ── Stage bundle ───────────────────────────────────────────────────────────────
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR" "$HELPERS_DIR"
+mkdir -p "$MACOS_DIR" "$HELPERS_DIR" "$RESOURCES_DIR"
 
 cp "$BUILD_DIR/Murmur" "$MACOS_DIR/Murmur"
+
+if [[ -f "$ROOT_DIR/Resources/Murmur.icns" ]]; then
+  cp "$ROOT_DIR/Resources/Murmur.icns" "$RESOURCES_DIR/Murmur.icns"
+fi
 
 # Resolve coli's real path (through symlinks) to find the package root.
 COLI_REAL="$(realpath "$COLI_PATH")"
@@ -93,6 +98,8 @@ cat >"$CONTENTS_DIR/Info.plist" <<'PLIST'
   <string>0.1.0</string>
   <key>CFBundleVersion</key>
   <string>1</string>
+  <key>CFBundleIconFile</key>
+  <string>Murmur.icns</string>
   <key>LSUIElement</key>
   <true/>
   <key>NSMicrophoneUsageDescription</key>
