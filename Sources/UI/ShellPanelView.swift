@@ -318,33 +318,6 @@ struct ShellPanelView: View {
                             .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
 
-                        // ── MODE chips (inline, always visible when idle) ──
-                        if !viewModel.isRecordingActive && !viewModel.isTranscribing {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    modeChip(
-                                        icon: "text.badge.checkmark",
-                                        label: "Clean",
-                                        isActive: viewModel.commandMode.activeCommand == nil
-                                    ) {
-                                        viewModel.commandMode.clearCommand()
-                                    }
-
-                                    ForEach(viewModel.commandMode.builtInCommands) { cmd in
-                                        modeChip(
-                                            icon: cmd.icon,
-                                            label: cmd.name,
-                                            isActive: viewModel.commandMode.activeCommand?.id == cmd.id
-                                        ) {
-                                            viewModel.commandMode.selectCommand(cmd)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
-                            }
-                        }
-
                         // ── Unified Record / Clip card ──
                         ZStack {
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -362,11 +335,18 @@ struct ShellPanelView: View {
                                     Button {
                                         viewModel.stopRecording()
                                     } label: {
-                                        Label("Stop", systemImage: "stop.fill")
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        VStack(spacing: 5) {
+                                            Image(systemName: "stop.fill")
+                                                .font(.system(size: 22, weight: .bold))
+                                            Text("Stop")
+                                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        }
+                                        .foregroundStyle(panelDanger)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 4)
+                                        .contentShape(Rectangle())
                                     }
-                                    .buttonStyle(.bordered)
-                                    .tint(panelDanger)
+                                    .buttonStyle(.plain)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
@@ -651,31 +631,6 @@ struct ShellPanelView: View {
             viewModel.refreshRuntime()
         }
         } // end else (compact mode)
-    }
-
-    // MARK: - Mode Chip
-
-    @ViewBuilder
-    private func modeChip(icon: String, label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
-        let purple = Color(red: 0.62, green: 0.46, blue: 0.86)
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
-                Text(label)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                isActive ? purple.opacity(0.18) : panelSurfaceStrong.opacity(0.8),
-                in: Capsule()
-            )
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(isActive ? purple : panelText.opacity(0.7))
     }
 }
 

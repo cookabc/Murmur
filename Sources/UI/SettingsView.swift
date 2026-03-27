@@ -267,6 +267,49 @@ struct SettingsView: View {
                         }
                     }
 
+                    // ── POLISH MODE ──
+                    VStack(alignment: .leading, spacing: 10) {
+                        sectionHeader("POLISH MODE")
+
+                        VStack(spacing: 0) {
+                            HStack(spacing: 10) {
+                                fieldLabel("Mode")
+                                Spacer()
+                                HStack(spacing: 6) {
+                                    modeChip(
+                                        icon: "text.badge.checkmark",
+                                        label: "Clean",
+                                        isActive: viewModel.commandMode.activeCommand == nil
+                                    ) {
+                                        viewModel.commandMode.clearCommand()
+                                    }
+                                    ForEach(viewModel.commandMode.builtInCommands) { cmd in
+                                        modeChip(
+                                            icon: cmd.icon,
+                                            label: cmd.name,
+                                            isActive: viewModel.commandMode.activeCommand?.id == cmd.id
+                                        ) {
+                                            viewModel.commandMode.selectCommand(cmd)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 11)
+                        }
+                        .background(surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 11))
+                                .foregroundStyle(muted)
+                            Text("Clean: fix grammar and punctuation. Translate: convert to English. Summarize: condense key points. Email Reply: draft a reply.")
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(muted)
+                                .lineSpacing(3)
+                        }
+                    }
+
                     // ── GLOBAL HOTKEY ──
                     VStack(alignment: .leading, spacing: 10) {
                         sectionHeader("GLOBAL HOTKEY")
@@ -522,6 +565,29 @@ struct SettingsView: View {
                 .background(surfaceStrong.opacity(0.9), in: Capsule())
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func modeChip(icon: String, label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+        let purple = Color(red: 0.62, green: 0.46, blue: 0.86)
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .semibold))
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                isActive ? purple.opacity(0.18) : surfaceStrong.opacity(0.8),
+                in: Capsule()
+            )
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(isActive ? purple : textColor.opacity(0.7))
     }
 
     private func save() {
