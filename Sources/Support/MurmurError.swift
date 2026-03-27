@@ -57,7 +57,7 @@ enum MurmurError: Error, LocalizedError, Identifiable {
     var errorDescription: String? {
         switch self {
         case .runtimeNotReady(let d): return "Runtime not ready: \(d)"
-        case .coliMissing: return "coli binary not found. Install @marswave/coli to enable transcription."
+        case .coliMissing: return "Transcription engine not found. Install it to enable speech-to-text."
         case .permissionDenied(let d): return "Permission denied: \(d)"
         case .recordingStartFailed(let u): return "Recording failed to start: \(u)"
         case .recordingAlreadyActive: return "Recording is already running."

@@ -174,7 +174,7 @@ struct ShellPanelView: View {
                             .background(panelDanger.opacity(0.12), in: Circle())
                     }
                     .buttonStyle(.plain)
-                    .help("Quit Voice Input")
+                    .help("Quit Murmur")
 
                     Button {
                         viewModel.onRequestDismiss?()
@@ -195,23 +195,50 @@ struct ShellPanelView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 14) {
                         if !viewModel.isReady {
-                            Text("\(viewModel.runtimeBadge): \(viewModel.detail)")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundStyle(panelMuted)
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(Color.orange.opacity(0.9))
+                                    Text(viewModel.runtimeBadge)
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                        .foregroundStyle(panelText)
+                                }
+                                Text(viewModel.detail)
+                                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                                    .foregroundStyle(panelMuted)
+                                HStack(spacing: 8) {
+                                    Button("Refresh") {
+                                        viewModel.refreshRuntime()
+                                    }
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    .buttonStyle(.bordered)
+                                    .tint(panelAccent)
+
+                                    Button("Settings") {
+                                        viewModel.openSettings()
+                                    }
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    .buttonStyle(.bordered)
+                                    .tint(panelAccentSoft)
+                                }
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
                         VStack(alignment: .leading, spacing: 8) {
+                            // ── LLM status row ──
                             HStack(spacing: 8) {
                                 Image(systemName: viewModel.llmHint.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(viewModel.llmHint.isEmpty ? Color.green.opacity(0.8) : Color.orange.opacity(0.9))
-                                Text("LLM Runtime")
-                                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                                    .foregroundStyle(panelMuted)
+                                Text(viewModel.llmLine)
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(panelText)
+                                    .lineLimit(2)
                                 Spacer()
                                 Button("Refresh") {
                                     Task { @MainActor in
@@ -232,22 +259,28 @@ struct ShellPanelView: View {
                                 }
                             }
 
+                            if !viewModel.llmHint.isEmpty {
+                                Text(viewModel.llmHint)
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(panelMuted)
+                            }
+
+                            // ── Flow status row ──
                             HStack(spacing: 8) {
                                 Image(systemName: viewModel.flowStage == .failed ? "xmark.octagon.fill" : "dot.circle.fill")
                                     .font(.system(size: 10, weight: .semibold))
                                     .foregroundStyle(viewModel.flowStage == .failed ? panelDanger : panelAccentSoft)
-                                Text("Flow Status")
-                                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                                    .foregroundStyle(panelMuted)
                                 Text(viewModel.flowStage.label)
                                     .font(.system(size: 11, weight: .bold, design: .rounded))
                                     .foregroundStyle(viewModel.flowStage == .failed ? panelDanger : panelAccentSoft)
+                                Text("·")
+                                    .foregroundStyle(panelMuted.opacity(0.4))
+                                Text(viewModel.flowLine)
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundStyle(panelText)
+                                    .lineLimit(1)
                                 Spacer()
                             }
-
-                            Text(viewModel.flowLine)
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundStyle(panelText)
 
                             if !viewModel.flowHint.isEmpty {
                                 Text(viewModel.flowHint)
@@ -259,16 +292,6 @@ struct ShellPanelView: View {
                                 Text(viewModel.metrics.stageSummaryText)
                                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                                     .foregroundStyle(panelMuted.opacity(0.7))
-                            }
-
-                            Text(viewModel.llmLine)
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundStyle(panelText)
-
-                            if !viewModel.llmHint.isEmpty {
-                                Text(viewModel.llmHint)
-                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                    .foregroundStyle(panelMuted)
                             }
                         }
                         .padding(12)

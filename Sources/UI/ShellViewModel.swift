@@ -56,10 +56,10 @@ final class ShellViewModel: ObservableObject {
     /// Human-readable hotkey string (e.g. "⌥Space"), kept in sync by PanelController.
     @Published var hotkeyDisplayString: String = ""
 
-    @Published var title = "Voice Input"
-    @Published var detail = "Checking the dictation engine…"
+    @Published var title = "Murmur"
+    @Published var detail = "Initializing transcription engine…"
     @Published var runtimeBadge = "Checking"
-    @Published var coliLine = "coli unresolved"
+    @Published var coliLine = "Transcription engine checking…"
     @Published var llmLine = "LLM runtime unresolved"
     @Published var llmHint = ""
     @Published var recordingLine = "Idle"
@@ -175,7 +175,7 @@ final class ShellViewModel: ObservableObject {
     var canPolish: Bool { !transcriptText.isEmpty && !isPolishing && !isTranscribing }
 
     var statusFooter: String {
-        coliLine.contains("ready") ? "✓ coli" : "✗ coli"
+        coliLine.contains("ready") ? "✓ ASR" : "✗ ASR"
     }
 
     var recordingTimeString: String {
@@ -200,10 +200,10 @@ final class ShellViewModel: ObservableObject {
                 detail = "Record a clip, then transcribe and paste it into any app."
             } else {
                 title = "Setup required"
-                detail = "Install coli (@marswave/coli) to enable transcription."
+                detail = "Transcription engine not found. See setup instructions."
             }
 
-            coliLine = statusLine(name: "coli", path: AppPaths.coliHelperPath, available: coliExists)
+            coliLine = statusLine(name: "Transcription", path: AppPaths.coliHelperPath, available: coliExists)
             await self.refreshLLMRuntime()
             recordingLine = core.isRecording ? "Recording live" : "Ready to record"
             if core.isRecording {
@@ -233,6 +233,8 @@ final class ShellViewModel: ObservableObject {
 
         stopClipPlayback()
         stopTTS()
+        // Clean up previous recording file before starting a new one.
+        cleanupRecordingFile()
 
         do {
             let path = try core.startRecording()
@@ -410,8 +412,17 @@ final class ShellViewModel: ObservableObject {
         transcriptText = ""
         transcriptMeta = ""
         polishedText = ""
+        cleanupRecordingFile()
         stopTTS()
         setFlowStage(.idle, line: isRecordingActive ? "Recording live" : "Ready to record")
+    }
+
+    /// Remove the temp recording file to avoid /tmp accumulation.
+    private func cleanupRecordingFile() {
+        guard !recordingPath.isEmpty else { return }
+        let path = recordingPath
+        recordingPath = ""
+        try? FileManager.default.removeItem(atPath: path)
     }
 
     // MARK: - TTS Proofread

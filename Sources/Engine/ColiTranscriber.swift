@@ -14,8 +14,8 @@ enum ColiTranscriberError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .audioFileNotFound(let p): return "Audio file not found: \(p)"
-        case .processFailed(let m):    return "coli failed: \(m)"
-        case .parseError(let r):       return "Unexpected coli response: \(r)"
+        case .processFailed(let m):    return "Transcription failed: \(m)"
+        case .parseError(let r):       return "Unexpected transcription response: \(r)"
         }
     }
 }
