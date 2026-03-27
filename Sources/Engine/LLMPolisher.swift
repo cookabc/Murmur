@@ -143,7 +143,7 @@ actor LLMPolisher {
         }
     }
 
-    func polish(text: String, dictionary: [String] = []) async throws -> String {
+    func polish(text: String, dictionary: [String] = [], commandOverride: CommandTemplate? = nil) async throws -> String {
         let key = apiKey
         if requiresAPIKey && key == nil {
             throw LLMPolisherError.noApiKey
@@ -166,10 +166,16 @@ actor LLMPolisher {
         }
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        // Read prompt templates from PromptManager (MainActor-isolated)
-        let (baseSystemPrompt, userContent) = await MainActor.run {
-            let pm = PromptManager.shared
-            return (pm.systemPrompt, pm.renderUserPrompt(text: text))
+        // Read prompt templates — command override takes priority over PromptManager.
+        let (baseSystemPrompt, userContent): (String, String)
+        if let cmd = commandOverride {
+            baseSystemPrompt = cmd.systemPrompt
+            userContent = cmd.userTemplate.replacingOccurrences(of: "{text}", with: text)
+        } else {
+            (baseSystemPrompt, userContent) = await MainActor.run {
+                let pm = PromptManager.shared
+                return (pm.systemPrompt, pm.renderUserPrompt(text: text))
+            }
         }
 
         let systemPrompt: String

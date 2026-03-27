@@ -93,6 +93,8 @@ final class ShellViewModel: ObservableObject {
     private let tts = TextToSpeechService.shared
     let metrics = FlowMetrics()
     private let history = HistoryStore.shared
+    let asrRegistry = ASRProviderRegistry.shared
+    let commandMode = CommandModeManager.shared
 
     private let core = VoiceCoreService()
 
@@ -466,10 +468,12 @@ final class ShellViewModel: ObservableObject {
         }
 
         isPolishing = true
-        setFlowStage(.polishing, line: "Polishing transcript")
+        let cmdLabel = commandMode.activeCommand?.name ?? "Polishing"
+        setFlowStage(.polishing, line: "\(cmdLabel) transcript")
         clearActionError()
         let text = transcriptText
         let dictionary = DictionaryManager.loadEntries()
+        let activeCommand = commandMode.activeCommand
         let vm = self
 
         Task.detached(priority: .userInitiated) {
@@ -489,7 +493,7 @@ final class ShellViewModel: ObservableObject {
                     }
                 }
 
-                let polished = try await LLMPolisher.shared.polish(text: text, dictionary: dictionary)
+                let polished = try await LLMPolisher.shared.polish(text: text, dictionary: dictionary, commandOverride: activeCommand)
                 await MainActor.run {
                     vm.polishedText = polished
                     vm.isPolishing = false

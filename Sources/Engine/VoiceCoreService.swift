@@ -5,7 +5,6 @@ import Foundation
 final class VoiceCoreService {
     private let session = AudioSession()
     private let liveSpeech = LiveSpeechRecognizer()
-    private let transcriber = ColiTranscriber()
 
     var isRecording: Bool { session.isRecording }
     // Called on the audio tap thread with a 0–1 normalised mic level.
@@ -50,6 +49,9 @@ final class VoiceCoreService {
     }
 
     func transcribeAudio(at path: String) async throws -> TranscriptionResult {
-        try await transcriber.transcribe(filePath: path, coliPath: AppPaths.coliHelperPath)
+        guard let provider = ASRProviderRegistry.shared.activeProvider else {
+            throw ColiTranscriberError.processFailed("No ASR provider selected")
+        }
+        return try await provider.transcribe(filePath: path)
     }
 }

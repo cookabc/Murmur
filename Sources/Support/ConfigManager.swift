@@ -8,7 +8,7 @@ final class ConfigManager: ObservableObject {
     static let shared = ConfigManager()
 
     struct Config: Codable, Equatable {
-        var asrProvider: String = "coli"
+        var asrProvider: String = "coli-sensevoice"
         var llmBaseURL: String = "http://localhost:11434"
         var llmModel: String = "qwen2.5:7b"
         var llmAPIKey: String = ""
@@ -17,6 +17,7 @@ final class ConfigManager: ObservableObject {
         var autoPolish: Bool = true
         var ttsEnabled: Bool = false
         var advancedMode: Bool = false
+        var vadEnabled: Bool = false
     }
 
     @Published private(set) var config: Config = Config()

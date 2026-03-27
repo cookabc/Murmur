@@ -275,6 +275,147 @@ struct ShellPanelView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
+                        // ── ASR Provider + Command Mode + VAD ──
+                        VStack(alignment: .leading, spacing: 10) {
+                            // ASR Provider
+                            HStack(spacing: 8) {
+                                Image(systemName: "waveform.badge.mic")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(panelAccentSoft)
+                                Text("ASR")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundStyle(panelMuted)
+                                Spacer()
+                            }
+                            HStack(spacing: 6) {
+                                ForEach(viewModel.asrRegistry.providers, id: \.id) { provider in
+                                    Button {
+                                        viewModel.asrRegistry.selectedID = provider.id
+                                    } label: {
+                                        VStack(spacing: 2) {
+                                            Text(provider.displayName)
+                                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                            Text(provider.subtitle)
+                                                .font(.system(size: 9, weight: .medium, design: .rounded))
+                                                .foregroundStyle(panelMuted)
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            provider.id == viewModel.asrRegistry.selectedID
+                                                ? panelAccent.opacity(0.18)
+                                                : panelSurfaceStrong.opacity(0.8),
+                                            in: Capsule()
+                                        )
+                                        .overlay(
+                                            provider.id == viewModel.asrRegistry.selectedID
+                                                ? Capsule().stroke(panelAccent.opacity(0.5), lineWidth: 1)
+                                                : nil
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(
+                                        provider.id == viewModel.asrRegistry.selectedID
+                                            ? panelAccent : panelText.opacity(0.7)
+                                    )
+                                }
+                            }
+
+                            // Command Mode
+                            HStack(spacing: 8) {
+                                Image(systemName: "command")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Color(red: 0.62, green: 0.46, blue: 0.86))
+                                Text("MODE")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundStyle(panelMuted)
+                                Spacer()
+                            }
+                            .padding(.top, 4)
+
+                            HStack(spacing: 6) {
+                                Button {
+                                    viewModel.commandMode.clearCommand()
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "text.badge.checkmark")
+                                            .font(.system(size: 10, weight: .semibold))
+                                        Text("Clean")
+                                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        viewModel.commandMode.activeCommand == nil
+                                            ? Color(red: 0.62, green: 0.46, blue: 0.86).opacity(0.18)
+                                            : panelSurfaceStrong.opacity(0.8),
+                                        in: Capsule()
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(
+                                    viewModel.commandMode.activeCommand == nil
+                                        ? Color(red: 0.62, green: 0.46, blue: 0.86) : panelText.opacity(0.7)
+                                )
+
+                                ForEach(viewModel.commandMode.builtInCommands) { cmd in
+                                    Button {
+                                        viewModel.commandMode.selectCommand(cmd)
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: cmd.icon)
+                                                .font(.system(size: 10, weight: .semibold))
+                                            Text(cmd.name)
+                                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            viewModel.commandMode.activeCommand?.id == cmd.id
+                                                ? Color(red: 0.62, green: 0.46, blue: 0.86).opacity(0.18)
+                                                : panelSurfaceStrong.opacity(0.8),
+                                            in: Capsule()
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(
+                                        viewModel.commandMode.activeCommand?.id == cmd.id
+                                            ? Color(red: 0.62, green: 0.46, blue: 0.86) : panelText.opacity(0.7)
+                                    )
+                                }
+                            }
+
+                            // VAD Toggle
+                            HStack(spacing: 8) {
+                                Image(systemName: "ear")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(panelMuted)
+                                Text("VAD")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundStyle(panelMuted)
+                                Text("(experimental)")
+                                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                                    .foregroundStyle(panelMuted.opacity(0.6))
+                                Spacer()
+
+                                Toggle("", isOn: Binding(
+                                    get: { ConfigManager.shared.config.vadEnabled },
+                                    set: { newVal in
+                                        var cfg = ConfigManager.shared.config
+                                        cfg.vadEnabled = newVal
+                                        ConfigManager.shared.saveConfig(cfg)
+                                    }
+                                ))
+                                .toggleStyle(.switch)
+                                .controlSize(.mini)
+                                .labelsHidden()
+                            }
+                            .padding(.top, 4)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
                         // ── Unified Record / Clip card ──
                         ZStack {
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
