@@ -81,7 +81,7 @@ struct ShellPanelView: View {
                 .fill(panelAccentSoft.opacity(dark ? 0.11 : 0.07))
                 .frame(width: 180, height: 180)
                 .blur(radius: 32)
-                .offset(x: -140, y: 310)
+                .offset(x: -140, y: 580)
 
             VStack(spacing: 0) {
                 // ── PINNED HEADER ──
@@ -509,7 +509,7 @@ struct ShellPanelView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(panelSurface.opacity(0.92), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .background(panelSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         } // end ASR/MODE/VAD collapse
 
                         // ── Unified Record / Clip card ──
